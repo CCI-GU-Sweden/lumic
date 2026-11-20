@@ -1,7 +1,8 @@
 """Plot spectral and spatial structure of the saved real-image residuals.
 
 Run from Python: python -m evaluations.inspect_real_residual_structure
-Uses saved hull/spatial-pool fits; never reruns ALS. Outputs remain local.
+Builds hull/spatial-pool fits before inspecting them. Use --reuse-prerequisites
+to inspect a completed saved baseline instead. Outputs remain local.
 """
 
 import argparse
@@ -15,11 +16,17 @@ from tqdm.auto import tqdm
 
 from lumic.evaluation import residual_pca_from_factors, residual_spectral_correlation
 from lumic.io import load_czi
-from .evaluate_real_residual_pooling import OUTPUT, PROJECTION_BATCH
+from .evaluate_real_residual_pooling import OUTPUT as BASE_OUTPUT, PROJECTION_BATCH, run as run_baseline
+from ._execution import record_evaluation, prepare_prerequisites
 
 
 DIRECTIONS = 6
 METHODS = ("hull", "spatial_residual")
+OUTPUT = BASE_OUTPUT.parent / "real_residual_structure"
+BASELINE_FILES = ("settings.json", "selection.npz", "hull.npz",
+                  "spatial_residual.npz", "observed_metrics.json")
+RESULT_FILES = (*BASELINE_FILES, "residual_structure/hull_diagnostics.npz",
+                "residual_structure/hull_pca.png", "residual_structure/settings.json")
 
 
 def residual_chunks(pixels, abundance, spectra):
@@ -97,7 +104,8 @@ def plot_directions(wave,stats,scores,path,title):
     fig.savefig(path)
 
 
-def run(folder=OUTPUT):
+@record_evaluation("folder")
+def run(folder=OUTPUT, *, input_path=None, reuse_prerequisites=False):
     """Inspect fixed fits; describe unexplained structure, not missing identity.
 
     Random noise need not be spectrally flat or uncorrelated after fitting.
@@ -106,6 +114,9 @@ def run(folder=OUTPUT):
     pure spectra. More residual PCs do not count additional fluorophores.
     """
     folder=Path(folder)
+    prepare_prerequisites(folder, stage="evaluate_real_residual_pooling",
+        required=BASELINE_FILES, reuse=reuse_prerequisites, input_path=input_path,
+        build=lambda: run_baseline(input_path=input_path, output_dir=folder))
     settings=json.loads((folder/"settings.json").read_text())
     output=folder/"residual_structure"
     output.mkdir(exist_ok=True)
@@ -175,7 +186,8 @@ def run(folder=OUTPUT):
     fig.tight_layout()
     fig.savefig(output/"means_and_spectral_correlation.png")
     report=["# Real-image residual structure","",
-        "Signed residuals reconstructed from existing saved fits; no ALS rerun. "
+        "Signed residuals reconstructed from fits prepared or explicitly reused for this run. "
+        "The inspection stage does not refit ALS. "
         "Every chunk was checked against the saved full-resolution RMS map.","",
         "[PCA common-basis comparison](pca_common_basis_comparison.png) · "
         "[Hull PCA](hull_pca.png) · [Expanded-pool PCA](spatial_residual_pca.png) · "
@@ -218,6 +230,9 @@ def run(folder=OUTPUT):
 
 if __name__=="__main__":
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--results-dir",type=Path,default=OUTPUT)
+    parser.add_argument("--output-dir", "--results-dir", dest="output_dir", type=Path, default=OUTPUT)
+    parser.add_argument("--input", type=Path, help="Local CZI; otherwise download public high-SNR COS-7 data.")
+    parser.add_argument("--reuse-prerequisites", action="store_true", help="Reuse a completed baseline in the output directory.")
     args=parser.parse_args()
-    with threadpool_limits(limits=1): run(args.results_dir)
+    with threadpool_limits(limits=1):
+        run(args.output_dir, input_path=args.input, reuse_prerequisites=args.reuse_prerequisites)

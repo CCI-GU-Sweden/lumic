@@ -25,6 +25,7 @@ from lumic.simulation import (Scene2D, Line, Rectangle, SamplingGrid, GaussianPS
     SpectralDetector, load_offline_emission_spectrum, render_scene)
 from lumic.utils import RGB_from_spec, select_analysis_pixels
 from ._residual_workflow import convex_hull_pool, fit_pool, inspect_fit_residuals, expand_pool
+from ._execution import record_evaluation
 
 
 BRIGHT_NAMES = ("EBFP2", "EGFP", "mCherry")
@@ -245,6 +246,7 @@ def plot_case(image,counts,spectra,wave,fits,audits,folder):
     fig.tight_layout();fig.savefig(folder/"mneptune_truth_audit.png")
 
 
+@record_evaluation("output")
 def run(output=OUTPUT, *, blur_fwhm_um=BLUR_FWHM_UM):
     output=Path(output);output.mkdir(parents=True,exist_ok=True)
     if not blur_fwhm_um or not np.isfinite(blur_fwhm_um).all() or any(value<0 for value in blur_fwhm_um):

@@ -25,6 +25,7 @@ from tqdm.auto import tqdm
 
 from . import evaluate_background_recovery as diagnostic
 from . import evaluate_radial_spoke_blur as scene
+from ._execution import record_evaluation
 
 
 # User settings: added counts are non-hull pixels, not total pool sizes.
@@ -186,6 +187,7 @@ def recovery_summary(rows):
     return lines
 
 
+@record_evaluation("output_dir")
 def main(output_dir=OUTPUT_DIR):
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)

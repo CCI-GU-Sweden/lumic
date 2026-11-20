@@ -1,8 +1,8 @@
 """Second residual-guided round: five versus six components on one new pool.
 
 Run from Python: python -m evaluations.continue_real_component_recovery
-Continue saved five-component runs using their fresh residual PC1. Organize
-four/five/six results under component_recovery/. All real-data outputs are local.
+Prepare five-component runs, then continue using their fresh residual PC1.
+Organize four/five/six results under component_recovery/. Outputs are local.
 """
 
 import argparse
@@ -17,9 +17,14 @@ from threadpoolctl import threadpool_limits
 from lumic import essential_spectral_pixles, unique_profiles
 from lumic.evaluation import compare_spectra
 from lumic.io import load_czi
-from .evaluate_real_extra_component import SEEDS, select_additions, match_extra
-from .evaluate_real_residual_pooling import OUTPUT, fit_and_project, UNIQUE_PERCENT
+from .evaluate_real_extra_component import (SEEDS, select_additions, match_extra,
+    RESULT_FILES as EXTRA_FILES, run as run_extra_component)
+from .evaluate_real_residual_pooling import OUTPUT as BASE_OUTPUT, fit_and_project, UNIQUE_PERCENT
 from .inspect_real_residual_structure import summarize_residuals, project_residuals, plot_directions
+from ._execution import record_evaluation, prepare_prerequisites
+
+
+OUTPUT = BASE_OUTPUT.parent / "real_component_recovery"
 
 
 def copy_artifacts(source, target, names):
@@ -28,7 +33,7 @@ def copy_artifacts(source, target, names):
     for old,new in names.items():
         if (source/old).exists(): shutil.copy2(source/old,target/new)
     (target/"provenance.json").write_text(json.dumps(dict(source=str(source.resolve()),
-        files=names,note="Snapshot of prior local run; originals preserved for reproducibility"),indent=2)+"\n")
+        files=names,note="Snapshot of prerequisite stage; originals preserved for reproducibility"),indent=2)+"\n")
 
 
 def fresh_pca(pixels, folder, fit_name, wave, label):
@@ -100,7 +105,8 @@ def plot_round_comparison(wave, before, control, six, source_pca, pixels,
     fig.tight_layout(rect=(0,0,1,.97));fig.savefig(folder/"round2_comparison.png")
 
 
-def run(root=OUTPUT):
+@record_evaluation("root")
+def run(root=OUTPUT, *, input_path=None, reuse_prerequisites=False):
     """Retain round-one pool, add both signs of its residual PC1, fit rank six.
 
     All original hull and first-round additions survive. At most 512 new
@@ -111,7 +117,11 @@ def run(root=OUTPUT):
     initialization and pool changes are documented rather than conflated.
     No automatic claim that six components remove all structure is made.
     """
-    root=Path(root);out=root/"component_recovery"
+    root=Path(root)
+    prepare_prerequisites(root, stage="evaluate_real_extra_component",
+        required=EXTRA_FILES, reuse=reuse_prerequisites, input_path=input_path,
+        build=lambda: run_extra_component(root, input_path=input_path))
+    out=root/"component_recovery"
     out.mkdir(exist_ok=True)
     settings=json.loads((root/"settings.json").read_text())
     pixels=load_czi(settings["input_path"]).unfold().data
@@ -210,6 +220,9 @@ def run(root=OUTPUT):
 
 if __name__=="__main__":
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--results-dir",type=Path,default=OUTPUT)
+    parser.add_argument("--output-dir", "--results-dir", dest="output_dir", type=Path, default=OUTPUT)
+    parser.add_argument("--input", type=Path, help="Local CZI; otherwise download public high-SNR COS-7 data.")
+    parser.add_argument("--reuse-prerequisites", action="store_true", help="Reuse completed four/five-component prerequisites in the output directory.")
     args=parser.parse_args()
-    with threadpool_limits(limits=1):run(args.results_dir)
+    with threadpool_limits(limits=1):
+        run(args.output_dir, input_path=args.input, reuse_prerequisites=args.reuse_prerequisites)

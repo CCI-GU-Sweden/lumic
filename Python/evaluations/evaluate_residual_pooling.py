@@ -26,6 +26,7 @@ from . import evaluate_background_recovery as diagnostic
 from . import evaluate_fitting_pool_expansion as expansion
 from . import evaluate_radial_spoke_blur as scene
 from ._residual_pooling import addition_pools, candidate_masks, spatial_diagnostics
+from ._execution import record_evaluation
 
 
 # Bounded pilot, not an adaptive optimization loop or noise sweep.
@@ -261,6 +262,7 @@ def plot_case(image, wavelengths, fits, masks, hull, output_dir):
     fig.savefig(output_dir/"spectra.png")
 
 
+@record_evaluation("output_dir")
 def main(output_dir=OUTPUT_DIR):
     """Generate the scene, run blind analysis, then perform a separate truth audit."""
     output_dir=Path(output_dir)
