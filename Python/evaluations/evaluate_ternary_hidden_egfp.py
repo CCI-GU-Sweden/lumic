@@ -4,6 +4,7 @@ Run ``python -m evaluations.evaluate_ternary_hidden_egfp`` from ``Python``.
 The experiment is noiseless and uses the saved FPbase emission curves offline.
 """
 
+import argparse
 import csv
 from pathlib import Path
 
@@ -25,6 +26,7 @@ from evaluations._component_reports import (
     save_component_metrics,
     save_component_recovery_figure,
 )
+from ._execution import record_evaluation
 
 
 # EBFP2 and mCherry have pure pixels along the bottom edge of each image.
@@ -351,6 +353,7 @@ def _save_optimization_history(path, histories):
     fig.savefig(path, facecolor="white", bbox_inches="tight")
 
 
+@record_evaluation("output_dir")
 def main(output_dir=OUTPUT_DIR):
     """Run the noiseless EGFP titration and save tables and figures."""
     if (len(IMAGE_SHAPE) != 2 or min(IMAGE_SHAPE) < 2
@@ -450,5 +453,7 @@ def main(output_dir=OUTPUT_DIR):
 
 
 if __name__ == "__main__":
-    saved_dir = main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
+    saved_dir = main(parser.parse_args().output_dir)
     print(f"Saved evaluation results to {saved_dir}")

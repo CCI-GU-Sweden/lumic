@@ -18,6 +18,7 @@ from lumic.simulation import GaussianPSF, SamplingGrid, SpectralDetector, render
 from . import evaluate_background_recovery as diagnostic
 from . import evaluate_fitting_pool_expansion as expansion
 from . import evaluate_radial_spoke_blur as scene
+from ._execution import record_evaluation
 
 
 ADDED_BUDGETS = (64, 256, 512, 1024, 2048)
@@ -145,6 +146,7 @@ def run_trajectory(pixels, wavelengths, output_dir):
     return rows
 
 
+@record_evaluation("output_dir")
 def main(output_dir):
     output_dir=Path(output_dir)
     detector=SpectralDetector.from_profile("980_32ch")

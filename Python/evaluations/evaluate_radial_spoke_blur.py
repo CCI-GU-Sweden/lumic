@@ -4,6 +4,7 @@ Run from Python with ``python -m evaluations.evaluate_radial_spoke_blur``.
 The true spectra and maps are used only after blind selection/fitting.
 """
 
+import argparse
 import csv
 from pathlib import Path
 
@@ -31,6 +32,7 @@ from lumic.simulation import (
     render_scene,
     simulate_linear_mixture,
 )
+from ._execution import record_evaluation
 
 
 # User settings. All lengths are micrometres; counts are expected detector
@@ -297,6 +299,7 @@ def save_reports(output_dir, rows):
             )
 
 
+@record_evaluation("output_dir")
 def main(output_dir=RESULTS):
     """Generate the scene once, then vary only optical blur."""
     output_dir = Path(output_dir)
@@ -377,4 +380,6 @@ def main(output_dir=RESULTS):
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", type=Path, default=RESULTS)
+    main(parser.parse_args().output_dir)

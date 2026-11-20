@@ -1,6 +1,6 @@
 """Repeated subsampling of non-hull pixels, with fixed hull and blind starts.
 
-Run after evaluate_fitting_pool_expansion. Reuse its first three +512 runs,
+Build the fitting-pool expansion first, reuse its first three +512 runs,
 then fit seven additional seeds. This measures sampling sensitivity, not
 bootstrap uncertainty, measurement noise, or accuracy on real images.
 """
@@ -14,6 +14,7 @@ from time import perf_counter
 import numpy as np
 from matplotlib.figure import Figure
 from tqdm.auto import tqdm
+from threadpoolctl import threadpool_limits
 
 from lumic import mcr_als
 from lumic.evaluation import evaluate_factors
@@ -21,10 +22,12 @@ from lumic.simulation import GaussianPSF, SamplingGrid, SpectralDetector, render
 from . import evaluate_fitting_pool_expansion as expansion
 from . import evaluate_background_recovery as diagnostic
 from . import evaluate_radial_spoke_blur as scene
+from ._execution import record_evaluation, prepare_prerequisites
 
 
 SAMPLING_SEEDS = tuple(range(2026, 2036))
 ADDED_BUDGET = 512
+OUTPUT_DIR = expansion.OUTPUT_DIR.parent / "fitting_pool_robustness"
 
 
 def compare_iteration_caps(base_dir):
@@ -173,8 +176,12 @@ def save_spread(output_dir, blur, successful, true_spectra, detector):
     return spectral_rows, summary, arrays
 
 
-def main(base_dir):
+@record_evaluation("base_dir")
+def main(base_dir=OUTPUT_DIR, *, reuse_prerequisites=False):
     base_dir = Path(base_dir)
+    prepare_prerequisites(base_dir, stage="evaluate_fitting_pool_expansion",
+        required=("settings.json", "summary.csv", "fitted_factors.npz"),
+        reuse=reuse_prerequisites, build=lambda: expansion.main(base_dir))
     settings = json.loads((base_dir / "settings.json").read_text())
     if settings["max_iterations"] != expansion.MAX_ITERATIONS or settings["tol_percent"] != expansion.TOL_PERCENT or settings["solver"] != expansion.SOLVER:
         raise ValueError("cached expansion settings must match the current solver settings")
@@ -280,5 +287,8 @@ def main(base_dir):
 
 if __name__ == "__main__":
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--base-dir",type=Path,default=expansion.OUTPUT_DIR)
-    main(parser.parse_args().base_dir)
+    parser.add_argument("--output-dir", "--base-dir", dest="output_dir", type=Path, default=OUTPUT_DIR)
+    parser.add_argument("--reuse-prerequisites", action="store_true", help="Reuse a completed fitting-pool expansion in the output directory.")
+    args = parser.parse_args()
+    with threadpool_limits(limits=1):
+        main(args.output_dir, reuse_prerequisites=args.reuse_prerequisites)

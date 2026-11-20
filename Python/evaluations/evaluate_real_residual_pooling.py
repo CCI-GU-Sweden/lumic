@@ -22,6 +22,7 @@ from lumic.data import download_cos7_data
 from lumic.io import load_czi
 from lumic.utils import RGB_from_spec
 from ._residual_pooling import candidate_masks
+from ._execution import record_evaluation
 
 
 # Match the notebook's preprocessing, blind selection and ALS settings.
@@ -147,6 +148,7 @@ def plot_comparison(rgb, wave, baseline, expanded, masks, added, folder):
     fig.savefig(folder/"spectra_and_convergence.png")
 
 
+@record_evaluation("output_dir")
 def run(input_path=None, output_dir=OUTPUT):
     """Use real image diagnostics for one spatially supported refit only.
 

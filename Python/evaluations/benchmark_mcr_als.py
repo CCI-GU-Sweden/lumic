@@ -4,6 +4,7 @@ Run from Python with ``python -m evaluations.benchmark_mcr_als``.
 Scene rendering and blind spectrum selection are outside the timed region.
 """
 
+import argparse
 import csv
 from pathlib import Path
 from time import perf_counter
@@ -12,6 +13,7 @@ import numpy as np
 
 from lumic import mcr_als, normalize_components
 from evaluations import evaluate_radial_spoke_blur as spokes
+from ._execution import record_evaluation
 
 
 # Fixed iteration counts make the timing comparison fair: neither solver
@@ -55,6 +57,7 @@ def make_fit_inputs():
     return pixels[chosen], normalize_components(starts, do_norm="L1")
 
 
+@record_evaluation("output_dir")
 def benchmark(output_dir=OUTPUT_DIR):
     """Measure runtime and check factors/history against the original solver."""
     data, starts = make_fit_inputs()
@@ -135,4 +138,6 @@ def benchmark(output_dir=OUTPUT_DIR):
 
 
 if __name__ == "__main__":
-    benchmark()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
+    benchmark(parser.parse_args().output_dir)

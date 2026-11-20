@@ -23,6 +23,7 @@ from lumic.simulation import GaussianPSF, SamplingGrid, SpectralDetector, render
 from .evaluate_radial_spoke_noise import (BLUR_FWHM_UM, COUNT_SCALES, NOISE_SEEDS,
     MAX_ITERATIONS, TOL_PERCENT, SELECTION_SEED, COMPONENTS, IMAGE_SHAPE, PIXEL_SIZE_UM,
     build_scene, detector_spectra, simulate_measurement, analyze_observed, audit_fit, plot_case)
+from ._execution import record_evaluation, print_case_summary
 
 
 BIN_FACTORS = (1, 2, 4)
@@ -169,6 +170,7 @@ def save_report(output, rows):
     (output / "README.md").write_text("\n".join(lines) + "\n")
 
 
+@record_evaluation("output")
 def run(output=OUTPUT):
     output = Path(output); output.mkdir(parents=True, exist_ok=True)
     detector = SpectralDetector.from_profile("980_32ch")
@@ -209,6 +211,7 @@ def run(output=OUTPUT):
                 save_report(output, rows)
         plot_comparison(output, blur, wave, spectra, rows)
     print(f"Saved binning comparison to {output}", flush=True)
+    print_case_summary(rows)
     return rows
 
 

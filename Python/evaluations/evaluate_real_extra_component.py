@@ -17,15 +17,23 @@ from threadpoolctl import threadpool_limits
 from lumic import essential_spectral_pixles, unique_profiles
 from lumic.evaluation import compare_spectra, select_residual_pixels
 from lumic.io import load_czi
-from .evaluate_real_residual_pooling import OUTPUT, fit_and_project, UNIQUE_PERCENT
+from .evaluate_real_residual_pooling import OUTPUT as BASE_OUTPUT, fit_and_project, UNIQUE_PERCENT
 from .inspect_real_residual_structure import (project_residuals, summarize_residuals,
-                                             plot_directions)
+                                             plot_directions, RESULT_FILES as RESIDUAL_FILES,
+                                             run as inspect_residuals)
+from ._execution import record_evaluation, prepare_prerequisites
 
 
 SEEDS = (2026, 2027)
 PER_SIGN_BUDGET = 512
 SCORE_QUANTILE = .9
 OPENING_RADIUS = 1
+OUTPUT = BASE_OUTPUT.parent / "real_extra_component"
+RESULT_FILES = (*RESIDUAL_FILES, "extra_component/observed_metrics.json", *(
+    f"extra_component/seed_{seed}/{name}"
+    for seed in SEEDS for name in (
+        "four.npz", "five.npz", "settings.json", "five_residual_pca.png",
+        "five_residual_diagnostics.npz", "spectra_and_extra_map.png", "five_component_maps.png")))
 
 
 def select_additions(scores, eligible, seed, *, n_directions=2, pcs=None,
@@ -109,7 +117,8 @@ def plot_case(wave, baseline, four, five, abundance, order, scores, added, folde
     fig.tight_layout();fig.savefig(folder/"five_component_maps.png")
 
 
-def run(root=OUTPUT):
+@record_evaluation("root")
+def run(root=OUTPUT, *, input_path=None, reuse_prerequisites=False):
     """Hold the fitting pool fixed when comparing four versus five components.
 
     Uses only the ORIGINAL hull fit and its residual PCA; the earlier
@@ -120,7 +129,11 @@ def run(root=OUTPUT):
     model rank and initialization, not just rank. Repeat two sampling seeds as
     a limited sensitivity check, not a bootstrap/confidence estimate.
     """
-    root=Path(root);output=root/"extra_component"
+    root=Path(root)
+    prepare_prerequisites(root, stage="inspect_real_residual_structure",
+        required=RESIDUAL_FILES, reuse=reuse_prerequisites, input_path=input_path,
+        build=lambda: inspect_residuals(root, input_path=input_path))
+    output=root/"extra_component"
     output.mkdir(exist_ok=True)
     settings=json.loads((root/"settings.json").read_text())
     pixels=load_czi(settings["input_path"]).unfold().data
@@ -207,6 +220,9 @@ def run(root=OUTPUT):
 
 if __name__=="__main__":
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--results-dir",type=Path,default=OUTPUT)
+    parser.add_argument("--output-dir", "--results-dir", dest="output_dir", type=Path, default=OUTPUT)
+    parser.add_argument("--input", type=Path, help="Local CZI; otherwise download public high-SNR COS-7 data.")
+    parser.add_argument("--reuse-prerequisites", action="store_true", help="Reuse completed baseline and residual inspection in the output directory.")
     args=parser.parse_args()
-    with threadpool_limits(limits=1):run(args.results_dir)
+    with threadpool_limits(limits=1):
+        run(args.output_dir, input_path=args.input, reuse_prerequisites=args.reuse_prerequisites)

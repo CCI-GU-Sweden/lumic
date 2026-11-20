@@ -4,6 +4,36 @@ For the simulation API, array layouts, count conventions and runnable offline
 examples, see the [simulation building-block guide](../lumic/simulation/README.md).
 This page describes the evaluation experiments built from those tools.
 
+## Standalone runs and provenance
+
+Run any evaluation directly from `Python/` with
+`python -m evaluations.<script_name>`. Each script accepts `--output-dir PATH`.
+The fitting-pool robustness study and the three real-image follow-ups generate
+their prerequisite fits/reports automatically; no prior evaluation command is
+required. Their default results directories are separate, so running one script
+does not overwrite another script's default results. Preparing a full real-image
+chain takes several minutes and writes several GB of local arrays.
+
+By default, prerequisites are rebuilt for each invocation using the current
+configuration. To deliberately reuse a completed run, pass
+`--reuse-prerequisites --output-dir PATH`. Reuse checks the required artifacts
+and the prerequisite's completion manifest, and rejects a different `--input`.
+It does not certify that saved settings match every current code/configuration
+change: choose reuse only for the saved experiment you intend to inspect.
+Older outputs without completion manifests must be regenerated once.
+Use different output directories for concurrent runs of the same evaluation.
+
+Each script writes `run_<script_name>.json` alongside its results, recording
+the Git commit and working-tree status (when running from a checkout), Python
+and dependency versions, arguments, serializable top-level settings, elapsed
+time, and whether execution completed, failed, or was interrupted. Prerequisite
+stages have separate manifests in the same results tree. Existing experiment
+settings, scientific metrics, seeds, and solver stopping diagnostics remain in
+their usual files. `completed` means the script finished, not that every fit
+converged or recovered the true factors. The noise and binning sweeps also print
+completed/failed case counts and iteration-cap counts in the terminal; expected
+per-case SVD failures remain recorded results and do not change the exit code.
+
 Run the noiseless binary titration from the `Python` directory:
 
 ```bash
@@ -300,13 +330,18 @@ superpixels are separate future work.
 ### Iteration cap and repeated sampling
 
 The reference folder retains the original 500-cap run in `iterations_500/`;
-the primary report uses a 1000-update cap. Run the robustness study afterward:
+the primary report uses a 1000-update cap. Run the robustness study directly:
 
 ```bash
 python -m evaluations.evaluate_fitting_pool_robustness
 ```
 
-Use `--base-dir PATH` to point at the expansion output. Ten seeds (2026–2035)
+The script first generates a fresh expansion in
+`results/fitting_pool_robustness/`, then writes its robustness report under
+`repeated_sampling/` within that directory. Use `--output-dir PATH` to choose
+another root. To reuse an existing expansion, use
+`--reuse-prerequisites --output-dir PATH`; `--base-dir` remains an alias for
+`--output-dir`. Ten seeds (2026–2035)
 at the +512 budget measure sensitivity to which additional pixels are used.
 The first three successful fits are reused from `fitted_factors.npz`; seven
 additional seeds are fitted per blur condition. The hull, blind starts, data,
@@ -452,12 +487,14 @@ Both fits restart identical blind spectra. There is one addition/refit round.
 
 Use `--input PATH` to supply your own CZI or `--output-dir PATH` to choose the
 results folder. By default, outputs go in the ignored
-`Python/evaluations/results/real_residual_pooling/` folder. The three
-follow-up scripts below run in order and read the same CZI path from the
-initial run's settings. Keep the cached file available while running them.
-If you choose a custom output directory, pass it as `--results-dir PATH`
-to each follow-up. Full-image projection uses chunks and the shared
-reconstruction metrics to limit memory.
+`Python/evaluations/results/real_residual_pooling/` folder. Each follow-up below
+can run independently: it prepares the baseline and any intermediate stages
+inside its own output directory. All accept `--input PATH` for a local CZI and
+`--output-dir PATH` for a custom results tree (`--results-dir` remains an alias).
+With no input argument they download/reuse the public CZI cache. To inspect an
+existing completed results tree instead, pass `--reuse-prerequisites` and point
+`--output-dir` at it. Keep that tree's input CZI available. Full-image projection
+uses chunks and the shared reconstruction metrics to limit memory.
 
 `comparison.png` displays RGB, threshold/opened masks, sampled pixels, shared
 RMS scales and signed RMS reduction. Display limits use shared 99.5th
@@ -473,7 +510,7 @@ on this same image is exploratory evidence about fit, not independent proof
 of more accurate spectra or concentrations. Relative errors at faint pixels
 also need care. No ground-truth audit is performed for the real image.
 
-To inspect spectral structure in those saved fits, without rerunning ALS:
+To generate fits and inspect their spectral residual structure in one command:
 
 ```bash
 python -m evaluations.inspect_real_residual_structure
@@ -481,7 +518,9 @@ python -m evaluations.inspect_real_residual_structure
 
 This saves six centred residual PCA directions paired with signed spatial
 score maps, mean signed residual spectra and consecutive-channel correlation
-maps under `results/real_residual_pooling/residual_structure/`. Full-resolution
+maps under `results/real_residual_structure/residual_structure/`. Use
+`--reuse-prerequisites --output-dir results/real_residual_pooling` to inspect
+an existing completed baseline without rerunning ALS. Full-resolution
 scores/loadings/covariance and correlation maps remain local in NPZ files.
 Each reconstructed residual chunk is checked against its saved RMS map.
 The paired PCA comparison uses the hull-only basis and mean for both fits,
@@ -498,7 +537,7 @@ correlations, so autocorrelation is descriptive rather than a noise-null test.
 The six displayed PCs are not six asserted missing components; detector
 effects and errors in existing signatures can also produce coherent patterns.
 
-To explore an additional component after those diagnostics:
+To explore an additional component, including automatic baseline/diagnostic preparation:
 
 ```bash
 python -m evaluations.evaluate_real_extra_component
@@ -514,7 +553,7 @@ stopping settings. Four starts remain the original blind starts; five starts
 are selected by a five-dimensional hull and `unique_profiles` within the new
 pool, so the comparison includes initialization as well as component count.
 
-Local `results/real_residual_pooling/extra_component/` contains residual maps on
+Local `results/real_extra_component/extra_component/` contains residual maps on
 the fixed original-hull PCA basis/centre, matched spectra, candidate extra
 contribution maps, all five contribution maps, metrics and exact selections.
 Rectangular spectral matching finds an unmatched fifth factor, but does not
@@ -523,7 +562,7 @@ detector/model effects are alternative explanations. Two seeds and same-image
 fit improvements are exploratory, without noise significance or independent
 validation. No private real-image outputs are staged by these scripts.
 
-To continue with a second addition round and six components:
+To run the complete chain through a second addition round and six components:
 
 ```bash
 python -m evaluations.continue_real_component_recovery
@@ -536,7 +575,8 @@ pool; five starts use the preceding fitted spectra, while six starts use a
 six-dimensional hull and `unique_profiles` within the new pool. The cap remains
 500, with notebook normalization/tolerance. Two sampling seeds are retained.
 
-The local `component_recovery/` directory organizes results into `components_4`,
+Prerequisites are generated inside `results/real_component_recovery/`.
+Its `component_recovery/` directory organizes results into `components_4`,
 `components_5`, and `components_6`, further labelled by hull-only/round and seed.
 Every fit has `fit.npz` and a fresh `residual_pca.png`. Prior results are copied
 as snapshots so earlier scripts retain their inputs. Six-component folders

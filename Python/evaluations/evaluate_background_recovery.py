@@ -24,6 +24,7 @@ from lumic.evaluation import (concentration_error_maps, evaluate_factors,
 from lumic.simulation import (GaussianPSF, SamplingGrid, SpectralDetector,
                               render_scene, simulate_linear_mixture)
 from . import evaluate_radial_spoke_blur as scene
+from ._execution import record_evaluation
 
 
 # User settings. Keep the scene/counts/detector from the original experiment.
@@ -225,7 +226,10 @@ def checkpoint_figure(path, rows):
     fig.savefig(path)
 
 
-def main(output_dir=RESULTS, fitting_pool="hull"):
+@record_evaluation("output_dir")
+def main(output_dir=RESULTS, fitting_pool="hull", *, compare_random_subset=False):
+    if compare_random_subset and fitting_pool != "hull":
+        raise ValueError("--compare-random-subset requires the primary hull fitting pool")
     if fitting_pool not in ("hull", "random_subset"):
         raise ValueError("fitting_pool must be hull or random_subset")
     output_dir = Path(output_dir)
@@ -390,6 +394,9 @@ def main(output_dir=RESULTS, fitting_pool="hull"):
                "Our present scene is noiseless; those noise-based weights are not an established remedy here."]
     (output_dir / "summary.md").write_text("\n".join(report) + "\n")
     print(f"Saved background recovery evaluation to {output_dir}")
+    if compare_random_subset:
+        main(output_dir / "random_subset_control", "random_subset")
+        compare_pools(output_dir)
     return rows
 
 
@@ -494,7 +501,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.compare_random_subset and args.fitting_pool != "hull":
         parser.error("--compare-random-subset requires the primary hull fitting pool")
-    main(args.output_dir, args.fitting_pool)
-    if args.compare_random_subset:
-        main(args.output_dir / "random_subset_control", "random_subset")
-        compare_pools(args.output_dir)
+    main(args.output_dir, args.fitting_pool, compare_random_subset=args.compare_random_subset)

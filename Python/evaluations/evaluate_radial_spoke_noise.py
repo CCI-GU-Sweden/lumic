@@ -29,6 +29,7 @@ from .evaluate_radial_spoke_blur import (BACKGROUND_COUNTS, COMPONENTS,
     IMAGE_SHAPE, PIXEL_SIZE_UM, SPOKE_COUNTS, SPOKE_SEED,
     build_scene, detector_spectra)
 from ._residual_workflow import convex_hull_pool, fit_pool, inspect_fit_residuals
+from ._execution import record_evaluation, print_case_summary
 
 
 # Human inputs. Global scaling preserves all fluorophore/background ratios.
@@ -279,6 +280,7 @@ def save_report(output, rows):
     (output / "README.md").write_text("\n".join(lines) + "\n")
 
 
+@record_evaluation("output")
 def run(output=OUTPUT):
     output = Path(output); output.mkdir(parents=True, exist_ok=True)
     detector = SpectralDetector.from_profile("980_32ch")
@@ -322,6 +324,7 @@ def run(output=OUTPUT):
                     (folder / "evaluation.json").write_text(json.dumps(rows[-1], indent=2) + "\n")
                     save_report(output, rows)  # Preserve partial reports if interrupted.
     print(f"Saved shot-noise evaluation to {output}", flush=True)
+    print_case_summary(rows)
     return rows
 
 
