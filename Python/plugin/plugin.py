@@ -9,7 +9,6 @@ locale.setlocale(locale.LC_NUMERIC, "C")
 
 import numpy as np
 from matplotlib import colormaps
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from multiprocess import Pool
@@ -19,6 +18,8 @@ from qtpy.QtWidgets import (
     QLabel, QMessageBox, QPlainTextEdit, QPushButton, QScrollArea, QSlider, QSpinBox,
     QTabWidget, QVBoxLayout, QWidget,
 )
+# Let qtpy select the Qt binding before Matplotlib initializes its Qt backend.
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from threadpoolctl import threadpool_limits
 
 from lumic import (

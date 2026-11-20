@@ -82,6 +82,7 @@ jobs:
     env:
       MPLBACKEND: Agg
       QT_QPA_PLATFORM: offscreen
+      QT_API: pyqt6
     steps:
       - uses: actions/checkout@v6
         with:
