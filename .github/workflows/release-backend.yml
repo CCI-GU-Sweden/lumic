@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'lumic-v*'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -11,10 +12,11 @@ permissions:
 jobs:
   build:
     name: Verify backend release artifacts
+    if: github.event_name == 'push' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - name: Check out tagged commit and branch history
+      - name: Check out the selected commit and branch history
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
@@ -26,6 +28,7 @@ jobs:
           python-version: '3.12'
 
       - name: Validate release tag
+        if: github.event_name == 'push'
         run: |
           if ! git merge-base --is-ancestor HEAD refs/remotes/origin/main; then
             echo "The release tag must point to a commit on main." >&2
@@ -63,7 +66,7 @@ jobs:
       - name: Store the checked distributions
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ github.ref_name }}-distributions
+          name: ${{ github.event_name == 'push' && format('{0}-distributions', github.ref_name) || format('backend-rehearsal-{0}', github.run_id) }}
           path: |
             dist/*.tar.gz
             dist/*.whl
