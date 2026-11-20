@@ -1,0 +1,340 @@
+{
+  "provenance": "Complete non-mosaic arrays decoded with aicspylibczi 4.0.1 before the backend migration, including all T/Z planes. SHA256 of C-order pixel bytes. Three composed mosaic references use aicspylibczi.read_mosaic(scale_factor=1).",
+  "cases": [
+    {
+      "path": "880/ex405-range371_695-res8p9nm.czi",
+      "axes": "CYX",
+      "shape": [
+        33,
+        8,
+        8
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "f69eb47efb75e7db18e4be16dc82606d687a589245d5680bfe7cd00eef073250"
+    },
+    {
+      "path": "880/ex405-range371_735-res8p9nm.czi",
+      "axes": "CYX",
+      "shape": [
+        34,
+        8,
+        8
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "a6f096e55fa0fca69df6aa5077ceb3d9429d8d8842e10197f1458ab5023456d9"
+    },
+    {
+      "path": "880/ex405-range409_695-res17p8nm.czi",
+      "axes": "CYX",
+      "shape": [
+        16,
+        8,
+        8
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "1e7ff35249988dd5639a30c75db73eb8c18a4ba9d7bef55e5a28df68dc10cfd7"
+    },
+    {
+      "path": "880/ex405-range409_695-res26p7nm.czi",
+      "axes": "CYX",
+      "shape": [
+        10,
+        8,
+        8
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "93bc6d23139f495ec8d730c0363bd3e392628fc705061a70ca74c28a2ea37ade"
+    },
+    {
+      "path": "880/ex405-range409_695-res35p6nm.czi",
+      "axes": "CYX",
+      "shape": [
+        7,
+        8,
+        8
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "f16bc1537e2ce5cfc9f7fcd32aa3d7af40848c96853a34ef18651f591d66a142"
+    },
+    {
+      "path": "880/ex405-range409_695-res8p9nm.czi",
+      "axes": "CYX",
+      "shape": [
+        32,
+        8,
+        8
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "fb2086717785fc24acee7307b7e6a29fec8a5d47d628da37d64c5a64b393fd32"
+    },
+    {
+      "path": "880/ex405-range409_695-res8p9nm_tseries3.czi",
+      "axes": "TCYX",
+      "shape": [
+        3,
+        32,
+        8,
+        8
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "7368ba8b032ff617811000bd8bcb15922e598300e22d9ca93e34b5be2d250f5b"
+    },
+    {
+      "path": "880/ex405-range409_695-res8p9nm_zstack3.czi",
+      "axes": "CZYX",
+      "shape": [
+        32,
+        3,
+        8,
+        8
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "e3672127ded6fa8a22cd620eecce63f3a3a051cafa3519b4c5b5068ac0d9c2f8"
+    },
+    {
+      "path": "880/ex405_561-range409_695-res8p9nm.czi",
+      "axes": "CYX",
+      "shape": [
+        28,
+        8,
+        8
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "16bebeecbfaecc698727050945224de9d08b5c94b189ceca7c01bc3a939a7e81"
+    },
+    {
+      "path": "880/ex488-range489_695-res8p9nm.czi",
+      "axes": "CYX",
+      "shape": [
+        19,
+        8,
+        8
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "10f9bf73395198c972a94a3a98d0fdef0011852bdb03024e4f5ed21704092482"
+    },
+    {
+      "path": "980/ex405-range411_694-res17p7nm.czi",
+      "axes": "CYX",
+      "shape": [
+        16,
+        32,
+        32
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "92d142cfda5e5f52b57cbbceaaf4e437f84e3ad0de1fc752c41415257b82728d"
+    },
+    {
+      "path": "980/ex405-range411_694-res26p5nm.czi",
+      "axes": "CYX",
+      "shape": [
+        11,
+        32,
+        32
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "5ea6baf338516ca1816c469c77e2df87e43a61a0fcea555b38be6aaf2b6796b6"
+    },
+    {
+      "path": "980/ex405-range411_694-res35p4nm.czi",
+      "axes": "CYX",
+      "shape": [
+        8,
+        32,
+        32
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "97c6c6ac0f6d02e07129d228ffd9ba751209eb6016518ae1bbc55901fb8a8245"
+    },
+    {
+      "path": "980/ex405-range411_694-res8p8nm.czi",
+      "axes": "CYX",
+      "shape": [
+        32,
+        32,
+        32
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "f83f9a3326d076084acdf44bfddf45c040c46807806b8134fd59b2be71056c0f"
+    },
+    {
+      "path": "980/ex405-range411_694-res8p8nm_tseries3.czi",
+      "axes": "TCYX",
+      "shape": [
+        3,
+        32,
+        32,
+        32
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "67d9ba20ed8a854f4822b1c1c6730d3275892490afc49456ecbc71dcf2f094e6"
+    },
+    {
+      "path": "980/ex405-range411_694-res8p8nm_zstack3.czi",
+      "axes": "CZYX",
+      "shape": [
+        32,
+        3,
+        32,
+        32
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "eea61b1876404e9a6a7d16ed0c281f1631c739a9f105e75828af1c45d0e96247"
+    },
+    {
+      "path": "980/ex405_488-range411_694-res8p8nm.czi",
+      "axes": "CYX",
+      "shape": [
+        32,
+        32,
+        32
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "28db2a5772dc04b17bf452481eccab41a256fd497f8cebbcd09876f4cc690b0d"
+    },
+    {
+      "path": "980/ex405_488_561-range411_694-res8p8nm.czi",
+      "axes": "CYX",
+      "shape": [
+        32,
+        32,
+        32
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "7d10fb573c9cdb6925ab65a47209b77c6bc18f6b956993ee07fbac36e5e38a52"
+    },
+    {
+      "path": "980/ex405_488_561_639-range380_694-res8p8nm.czi",
+      "axes": "CYX",
+      "shape": [
+        34,
+        32,
+        32
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "7b33d0b73c5624075a0759930f5727fb222e8a2f5399defed800f7d31d2df08c"
+    },
+    {
+      "path": "980/ex405_488_561_639-range411_694-res8p8nm.czi",
+      "axes": "CYX",
+      "shape": [
+        32,
+        32,
+        32
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "a344f525d05f930ca348a2c4a8932d8a6b289a7b3dc74c4f6cd932b1ab935159"
+    },
+    {
+      "path": "980/ex405_488_561_639-range411_757-res8p8nm.czi",
+      "axes": "CYX",
+      "shape": [
+        33,
+        32,
+        32
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "28a90a9b13e8a1770dbbf38b07740fb98a87f6e7ddc6877a4f8922c1eea5c61b"
+    },
+    {
+      "path": "980/ex488_561-range499_605-res8p8nm.czi",
+      "axes": "CYX",
+      "shape": [
+        12,
+        32,
+        32
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "d1187d9152d851cc8001327b4f949641de9b78ce0d9950f6774d533627b5afee"
+    },
+    {
+      "path": "980/spectral-example-all-channels.czi",
+      "axes": "CYX",
+      "shape": [
+        32,
+        32,
+        32
+      ],
+      "dtype": "uint16",
+      "pixels_sha256": "a326132f484bf863d408a4cf9ed26385f681f3f8785f46b0ecb689379c9ea8ad"
+    },
+    {
+      "path": "980/spectral-example-subset-channels.czi",
+      "axes": "CYX",
+      "shape": [
+        18,
+        32,
+        32
+      ],
+      "dtype": "uint16",
+      "pixels_sha256": "5ac98b84ae7c566d04c2c3d60be1c12e2b68aabe1b2e820406b6d399fea08f05"
+    },
+    {
+      "path": "cd7-900/ex405-range450_650-res40nm.czi",
+      "axes": "CYX",
+      "shape": [
+        12,
+        32,
+        32
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "2b90f173dac42a347652e81e5cf494946ba1a515b8c4245a114971305c516738"
+    },
+    {
+      "path": "cd7-900/ex405-range450_650-res66p6nm-zstack3.czi",
+      "axes": "CZYX",
+      "shape": [
+        8,
+        3,
+        32,
+        32
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "f353f3f14dbffeaa2be6365d30bf83173c0e02d197972e0f230affd4e658bf67"
+    },
+    {
+      "path": "cd7-900/ex405-range450_650-res66p6nm.czi",
+      "axes": "CYX",
+      "shape": [
+        8,
+        32,
+        32
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "9988b2923a38b1ae6ab203c1d3713962ede3f2cb523290451c5e1ae9651501a5"
+    },
+    {
+      "path": "cd7-900/ex405-range450_650-res66p6nm-tile2x2.czi",
+      "axes": "CYX",
+      "shape": [
+        8,
+        62,
+        62
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "9a120430755d70249e8b6fe911e7d58982f0f6abe4d8d66501ee4e8e4c3395f2"
+    },
+    {
+      "path": "880/ex405-range409_695-res8p9nm_tile2x2.czi",
+      "axes": "CYX",
+      "shape": [
+        32,
+        14,
+        14
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "6900a4edc55a4992756d1e4e86cf5345cda0ff9bae52305be118dafba0e6d681"
+    },
+    {
+      "path": "980/ex405-range411_694-res8p8nm_tile2x2.czi",
+      "axes": "CYX",
+      "shape": [
+        32,
+        60,
+        60
+      ],
+      "dtype": "uint8",
+      "pixels_sha256": "51419269c37a1c8e9f992ac2a20b408fdb256e8be254d7eb867c603e8f8ce28e"
+    }
+  ]
+}

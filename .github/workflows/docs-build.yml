@@ -1,0 +1,53 @@
+name: Documentation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs-build:
+    name: Documentation build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        # Activate docs-env through the login shell set up by setup-miniconda.
+        shell: bash -el {0}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Create the documentation Conda environment
+        uses: conda-incubator/setup-miniconda@v4
+        with:
+          miniforge-version: latest
+          environment-file: environment-docs.yml
+          activate-environment: docs-env
+          auto-activate: false
+          channels: conda-forge
+          channel-priority: strict
+          conda-remove-defaults: true
+
+      - name: Build the site
+        run: mkdocs build --strict
+
+      - name: Verify the COS-7 tutorial files
+        run: |
+          for path in site/backend/cos7-workflow/index.html site/backend/minimal_example.ipynb site/assets/cos7-workflow.png; do
+            if [[ ! -s "$path" ]]; then
+              echo "Expected a nonempty documentation file at $path" >&2
+              exit 1
+            fi
+          done

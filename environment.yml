@@ -1,0 +1,38 @@
+# Backend development, example and CI environment.
+# Backend pip dependencies and optional extras are declared in Python/lumic/pyproject.toml.
+name: unmixing-env
+channels:
+  - conda-forge
+  # Ignore channels inherited from a developer's Conda configuration.
+  - nodefaults
+dependencies:
+  - python=3.12
+  - pip
+  # related to jupyter notebooks
+  - ipykernel
+  - jupyterlab
+  # tests
+  - pytest
+  # data handling
+  - numpy>=2.1
+  - pandas>=1.5
+  - matplotlib>=3.6
+  # xml generation
+  - lxml>=4.9.2
+  # OME-TIFF pixel I/O and lossless compression support.
+  - tifffile>=2026.9.20,<2027
+  - imagecodecs>=2026.8.16
+  # image processing
+  - scikit-image>=0.19.2
+  # data mining and machine learning
+  - scikit-learn>=1.2.2
+  # multiprocessing and multithreading
+  - multiprocess>=0.70
+  # progress meter
+  - tqdm
+
+  - pip:
+    # Typed OME-XML metadata; keep the base install without optional extras.
+    - ome-types>=0.6.3,<0.7
+    - pylibCZIrw>=6.1.0
+    - fpbase==0.1.3

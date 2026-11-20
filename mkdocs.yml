@@ -1,0 +1,33 @@
+site_name: Lumic
+site_description: Spectral unmixing for fluorescence microscopy
+hooks:
+  - Python/ci/render_cos7_notebook.py
+watch:
+  - Python/examples/notebooks/minimal_example.ipynb
+theme:
+  name: material
+  features:
+    - content.code.copy
+markdown_extensions:
+  - pymdownx.highlight:
+      pygments_lang_class: true
+  - pymdownx.superfences
+nav:
+  - Home: index.md
+  - Backend:
+      - Quickstart: backend/quickstart.md
+      - Experimental data:
+          - Load spectral images: backend/load-images.md
+          - Unmix a real experimental image (COS-7): backend/cos7-workflow.md
+          - Evaluate experimental data: backend/evaluate-results.md
+      - Simulated data:
+          - Simulate a spectral image: backend/simulate-image.md
+          - Unmix a ternary image: backend/unmix-ternary-image.md
+          - Estimate unknown spectra: backend/estimate-unknown-spectra.md
+          - Spectral uniqueness maps: backend/spectral-uniqueness-maps.md
+          - Recover a spectrum without pure pixels: backend/recover-hidden-spectrum.md
+          - Evaluate simulation recovery: backend/evaluate-simulation-recovery.md
+      - Save images and spectra: backend/save-results.md
+  - Examples: examples.md
+  - Contributing:
+      - Adding an image reader: contributing/adding-an-image-reader.md
