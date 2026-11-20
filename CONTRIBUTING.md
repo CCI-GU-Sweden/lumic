@@ -111,10 +111,23 @@ commit with `lumic-v<version>` and push the tag. The workflow verifies that
 the tag matches the package version and points to a commit on `main`.
 Review the source archive and wheel in the `<tag>-distributions` artifact.
 
-Publishing is a separate step. The upload workflows are still in
-[workflow-templates](.github/workflow-templates/). Update and verify the
-TestPyPI and PyPI Trusted Publisher settings before activating them. They
-require a successful tag-triggered build and manual approval.
+### Publish a backend candidate to PyPI
+
+Configure the Trusted Publisher for the existing `lumic` project on PyPI
+with owner `CCI-GU-Sweden`, repository `lumic`, and workflow filename
+`publish-backend-pypi.yml`. Leave the environment field blank.
+
+1. Review the wheel and source archive from a successful `lumic-vX.Y.ZrcN`
+   build. Copy the numeric run ID from the build run URL.
+2. Open **Actions → Publish backend candidate to PyPI → Run workflow**.
+   Select `main`, enter the reviewed run ID, and confirm the public upload.
+3. After the upload, install the exact candidate from PyPI in a fresh
+   Python 3.12 environment and run the installed backend smoke test.
+
+The [publish workflow](.github/workflows/publish-backend-pypi.yml) checks
+that the run ID comes from a successful tag-triggered build and uploads its
+reviewed artifacts. The TestPyPI workflow remains in
+[workflow-templates](.github/workflow-templates/).
 
 ## Upgrading an existing Python 3.9 setup
 

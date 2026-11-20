@@ -1,5 +1,10 @@
 # Lumic backend changelog
 
+## 0.1.0rc3
+
+- Verify release packaging and PyPI publishing from the new Lumic repository.
+- Update repository links in the package metadata and README.
+
 ## 0.1.0rc2
 
 - Add `lumic.data.download_cos7_data()` to retrieve the public COS-7 spectral
