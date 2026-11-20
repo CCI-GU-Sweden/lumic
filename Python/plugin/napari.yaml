@@ -1,0 +1,10 @@
+name: napari-lumic-cci
+display_name: LUMIC CCI-GU
+contributions:
+  commands:
+    - id: napari-lumic-cci.spectral_unmixing_widget
+      title: Open Spectral Unmixing
+      python_name: napari_lumic_cci.plugin:SpectralUnmixingWidget
+  widgets:
+    - command: napari-lumic-cci.spectral_unmixing_widget
+      display_name: Spectral Unmixing

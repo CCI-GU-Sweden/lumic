@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "napari-lumic-cci"
+version = "0.1.0rc3"
+description = "A napari interface for LUMIC spectral unmixing"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Lumic contributors"}]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: napari",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+dependencies = [
+    "lumic>=0.1.0rc1,<0.2",
+    "napari>=0.9",
+    "numpy>=2.1",
+    "matplotlib>=3.9",
+    "multiprocess>=0.70",
+    "qtpy>=2.4.3",
+    "threadpoolctl",
+]
+
+[project.urls]
+Repository = "https://github.com/CCI-GU-Sweden/lumic"
+
+[project.entry-points."napari.manifest"]
+napari-lumic-cci = "napari_lumic_cci:napari.yaml"
+
+[tool.setuptools]
+package-dir = {napari_lumic_cci = "."}
+packages = ["napari_lumic_cci"]
+include-package-data = false
+
+[tool.setuptools.package-data]
+napari_lumic_cci = ["napari.yaml"]
