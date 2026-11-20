@@ -47,8 +47,13 @@ and Lin et al. (2009) for mNeptune
 Those are protein references; the FPbase entries are the source of these
 particular CSV curves.
 
-FPbase's data policy makes database data available for commercial and
-noncommercial use and asks users to credit the original authors. FPbase lists
-[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) on its
-[license and policy page](https://www.fpbase.org/privacy/). These CSVs retain
-that source notice and document the conversion and rounding above.
+These CSV files contain spectral data retrieved from FPbase. FPbase's data
+policy states that database data are freely available for commercial and
+noncommercial use, and asks users to credit the original authors. The source
+entries and references are listed above; the conversion and rounding are
+documented in this README.
+
+FPbase separately lists a CC BY-SA 4.0 license for FPbase itself. We reference
+the data-specific policy for these downloaded spectra. See
+[FPbase's policy and license page](https://www.fpbase.org/privacy/) for its
+full conditions and disclaimers.

@@ -7,10 +7,10 @@ The backend runs without a graphical interface.
 
 ## Install
 
-Use Python 3.12. This guide uses the `0.1.0rc2` prerelease.
+Use Python 3.12. This guide uses the `0.1.0rc3` prerelease.
 
 ```sh
-python -m pip install "lumic==0.1.0rc2"
+python -m pip install "lumic==0.1.0rc3"
 ```
 
 To install the source version from the repository root:

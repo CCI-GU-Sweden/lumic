@@ -5,6 +5,19 @@ spectra and synthetic visual examples. This index describes the shareable
 repository data; it does not imply that every folder on a developer's machine
 is included on GitHub.
 
+## I/O fixture provider and terms
+
+Centre for Cellular Imaging (CCI), Gothenburg, owns and provides the microscopy
+I/O fixtures in `io-data/`, acquired by Rafael Camacho. The CZI files, paired
+OME-TIFF exports, ZEN reference screenshots, recorded labels/pixel values, and
+metadata/reference JSON files are dedicated under **CC0 1.0 Universal**. See
+[the fixture data dedication](io-data/LICENSE.md) for the covered paths and
+terms. Attribution is appreciated but is not required.
+
+This dedication is specific to the I/O fixtures. The
+[FPbase spectra](../lumic/simulation/fpbase_data/README.md) have their own source
+policy and attribution notice.
+
 ## Start here
 
 | Data | What it is for | Details |
