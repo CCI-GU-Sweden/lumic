@@ -70,7 +70,42 @@ jobs:
         run: python -m pip check
 
       - name: Run the offline test suite
-        run: python -m pytest
+        run: python -m pytest --ignore-glob="tests/test_plugin_*.py"
+
+  plugin-tests:
+    name: Napari plugin tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash -el {0}
+    env:
+      MPLBACKEND: Agg
+      QT_QPA_PLATFORM: offscreen
+      QT_API: pyqt6
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: conda-incubator/setup-miniconda@v4
+        with:
+          miniforge-version: latest
+          environment-file: environment.yml
+          activate-environment: unmixing-env
+          auto-activate: false
+          channels: conda-forge
+          channel-priority: strict
+          conda-remove-defaults: true
+      - name: Install Qt system libraries
+        # Offscreen Qt still links against EGL and OpenGL at import time.
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libegl1 libopengl0
+      - name: Install plugin and Qt dependencies
+        run: python -m pip install -e ./Python/lumic -e ./Python/plugin "napari[pyqt6]"
+      - name: Run plugin tests
+        working-directory: Python
+        run: python -m pytest tests/test_plugin_*.py
 
   backend-wheel:
     name: Backend wheel (${{ matrix.os }})

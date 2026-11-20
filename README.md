@@ -1,6 +1,7 @@
 # Lumic
 
 [![Lumic backend version on PyPI](https://img.shields.io/pypi/v/lumic?label=Backend%20PyPI)](https://pypi.org/project/lumic/)
+[![Plugin version on PyPI](https://img.shields.io/pypi/v/napari-lumic-cci?label=Plugin%20PyPI)](https://pypi.org/project/napari-lumic-cci/)
 [![Python tests](https://github.com/CCI-GU-Sweden/lumic/actions/workflows/python-tests.yml/badge.svg?branch=main)](https://github.com/CCI-GU-Sweden/lumic/actions/workflows/python-tests.yml)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue)](environment.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
@@ -27,6 +28,18 @@ The [documentation source](docs/index.md) includes tutorials on loading
 images, estimating spectra, evaluating fits, and saving results. See the
 [local preview instructions](CONTRIBUTING.md#preview-the-documentation-locally)
 to browse the site.
+
+## Install the published plugin
+
+In a fresh Python 3.12 environment, install the plugin and a Qt binding:
+
+```bash
+python -m pip install napari-lumic-cci "napari[pyqt6]"
+```
+
+Launch napari with `python -m napari`, then open **Plugins → LUMIC CCI-GU →
+Spectral Unmixing**. See the [plugin README](Python/plugin/README.md) and
+[plugin documentation](docs/plugins/overview.md) for the workflow.
 
 Start with the simulation below. You do not need microscope data or a notebook:
 it creates a small image, separates its three fluorescent proteins, and saves
@@ -168,9 +181,10 @@ side-by-side comparisons.
 With the environment active and your terminal in `Python/`:
 
 ```bash
-python -m pytest
+python -m pytest --ignore-glob="tests/test_plugin_*.py"
 ```
 
-The tests run offline. GitHub Actions also runs them for pull requests targeting
+Plugin tests require the plugin dependencies and a Qt binding; see the
+[plugin README](Python/plugin/README.md). The tests run offline. GitHub Actions also runs them for pull requests targeting
 `main` and pushes to `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the
 contribution workflow, environment details and GitHub check settings.
