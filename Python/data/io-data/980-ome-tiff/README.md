@@ -5,6 +5,10 @@ The microscope operator exported these files from the matching CZIs in
 operator's export information is recorded here. These are quantitative exports,
 not RGB previews; all supplied exports are uncompressed.
 
+The acquisitions and exports were provided by Centre for Cellular Imaging
+(CCI), Gothenburg, with Rafael Camacho as acquisition operator. The TIFFs are
+included in the fixture collection's [CC0 1.0 data dedication](../LICENSE.md).
+
 | OME-TIFF basename | Logical axes | Shape | Dtype |
 | --- | --- | --- | --- |
 | `spectral-example-all-channels.ome.tiff` | CYX | 32×32×32 | uint16 |

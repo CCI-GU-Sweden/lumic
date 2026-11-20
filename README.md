@@ -14,10 +14,10 @@ Lumic is a Lille–Gothenburg collaboration.
 ## Install the published backend
 
 The Lumic backend is available as a prerelease. Install it from
-[PyPI](https://pypi.org/project/lumic/0.1.0rc2/) in a Python 3.12 environment:
+[PyPI](https://pypi.org/project/lumic/0.1.0rc3/) in a Python 3.12 environment:
 
 ```bash
-python -m pip install "lumic==0.1.0rc2"
+python -m pip install "lumic==0.1.0rc3"
 ```
 
 The [backend quickstart](Python/lumic/README.md#unmix-a-simulated-pixel-offline)
@@ -188,3 +188,17 @@ Plugin tests require the plugin dependencies and a Qt binding; see the
 [plugin README](Python/plugin/README.md). The tests run offline. GitHub Actions also runs them for pull requests targeting
 `main` and pushes to `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the
 contribution workflow, environment details and GitHub check settings.
+
+## Acknowledgements
+
+We thank **Raffaele Vitale (University of Lille)** for valuable scientific
+discussions and insights that helped guide Lumic's development.
+
+## License and data attribution
+
+Lumic code and documentation are distributed under the [MIT license](LICENSE).
+The microscopy I/O fixtures supplied by Centre for Cellular Imaging (CCI),
+Gothenburg, are dedicated under [CC0 1.0 Universal](Python/data/io-data/LICENSE.md).
+The bundled [FPbase spectra](Python/lumic/simulation/fpbase_data/README.md) retain
+their separate source-policy and attribution notice. See the
+[data index](Python/data/README.md) for provenance and details.

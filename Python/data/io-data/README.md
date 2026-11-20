@@ -6,6 +6,15 @@ I/O fixtures, not demonstrations of reliable spectral recovery or calibrated
 detector response. Files from different acquisitions need not contain matching
 pixels, even if they cover similar sample regions.
 
+## Provider and data dedication
+
+These fixtures were acquired at Centre for Cellular Imaging (CCI), Gothenburg,
+Sweden, with Rafael Camacho as acquisition operator. CCI owns the data and
+dedicates its rights in the CZI acquisitions, paired OME-TIFF exports, reference
+screenshots, recorded labels/pixel values, and metadata/reference JSON files
+under **CC0 1.0 Universal**. See [the data dedication](LICENSE.md) for the exact
+scope and terms. Attribution is appreciated but is not required by CC0.
+
 ## Collection
 
 | Directory | Acquisition model | CZI files | Currently supported single-plane cases | Approximate size |
