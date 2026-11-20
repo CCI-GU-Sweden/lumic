@@ -9,7 +9,6 @@
 **Lumic** is a Python toolkit for separating overlapping fluorescence signals
 in microscopy images. It estimates how much each spectral component contributes
 to each pixel and helps you inspect what the fitted model leaves unexplained.
-Lumic is a Lille–Gothenburg collaboration.
 
 ## Install the published backend
 
@@ -192,7 +191,9 @@ contribution workflow, environment details and GitHub check settings.
 ## Acknowledgements
 
 We thank **Raffaele Vitale (University of Lille)** for valuable scientific
-discussions and insights that helped guide Lumic's development.
+discussions and insights that helped guide Lumic's development, and for sharing
+a MATLAB implementation that served as a basis for parts of the Lumic backend.
+That MATLAB implementation is not distributed in this repository.
 
 ## License and data attribution
 
