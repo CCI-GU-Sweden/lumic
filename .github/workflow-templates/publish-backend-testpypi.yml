@@ -1,0 +1,77 @@
+name: Publish backend candidate to TestPyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_run_id:
+        description: 'Run ID of the reviewed Build backend release job'
+        required: true
+        type: string
+      confirm_public_upload:
+        description: 'I reviewed the distributions and approve uploading them publicly to TestPyPI'
+        required: true
+        default: false
+        type: boolean
+
+permissions: {}
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main' && inputs.confirm_public_upload
+    name: Upload reviewed backend distributions to TestPyPI
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      id-token: write
+    steps:
+      - name: Verify candidate build
+        id: candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+        run: |
+          if [[ ! "$RELEASE_RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo "Enter the numeric run ID from the release build URL." >&2
+            exit 1
+          fi
+
+          tag=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RELEASE_RUN_ID" --jq '
+            select(.path == ".github/workflows/release-backend.yml"
+              and .event == "push" and .status == "completed" and .conclusion == "success")
+            | .head_branch
+          ')
+          if [[ ! "$tag" =~ ^lumic-v[0-9]+\.[0-9]+\.[0-9]+rc[0-9]+$ ]]; then
+            echo "Select a successful backend release build for a lumic-vX.Y.ZrcN tag." >&2
+            exit 1
+          fi
+          {
+            echo "artifact_name=${tag}-distributions"
+            echo "version=${tag#lumic-v}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Download the checked distributions
+        uses: actions/download-artifact@v8
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.release_run_id }}
+          name: ${{ steps.candidate.outputs.artifact_name }}
+          path: dist/
+
+      - name: Verify the upload contains only the candidate wheel and source archive
+        env:
+          VERSION: ${{ steps.candidate.outputs.version }}
+        run: |
+          shopt -s dotglob nullglob
+          files=(dist/*)
+          if [[ ${#files[@]} -ne 2 ||
+                ! -f "dist/lumic-${VERSION}.tar.gz" ||
+                ! -f "dist/lumic-${VERSION}-py3-none-any.whl" ]]; then
+            echo "Expected exactly the Lumic wheel and source archive for ${VERSION}." >&2
+            exit 1
+          fi
+
+      - name: Upload to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
