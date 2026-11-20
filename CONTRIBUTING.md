@@ -6,7 +6,7 @@ Create and activate the environment in `environment.yml`, then run:
 
 ```bash
 cd Python
-python -m pytest
+python -m pytest --ignore-glob='tests/test_plugin_*.py'
 ```
 
 This is the backend environment used by CI. For a pip setup, use a Python
@@ -15,7 +15,7 @@ This is the backend environment used by CI. For a pip setup, use a Python
 ```bash
 python -m pip install './Python/lumic[all]'
 cd Python
-python -m pytest
+python -m pytest --ignore-glob='tests/test_plugin_*.py'
 ```
 
 The backend test suite includes plotting examples and mocked FPbase requests,
@@ -39,7 +39,8 @@ and explain the expected result. Existing tests cannot verify behavior they
 do not exercise.
 
 See the [test suite guide](Python/tests/README.md) for test locations,
-focused commands, and fixture conventions.
+focused commands, and fixture conventions. For the Napari tests, follow the
+[plugin test instructions](Python/plugin/README.md#run-plugin-tests).
 
 ## Pull requests and GitHub checks
 
@@ -95,16 +96,25 @@ notebook download, and result figure are present in the site output.
 
 ## Prepare a backend release
 
-The release build and publishing manifests are kept in
-[workflow-templates](.github/workflow-templates/). Before releasing from this
-repository, review and activate the build workflow, then update and verify the
-TestPyPI and PyPI Trusted Publisher settings before activating uploads.
+The [backend release workflow](.github/workflows/release-backend.yml) builds
+the source archive and wheel, checks their metadata, and installs the wheel in
+a clean environment for a smoke test.
 
-Once the build workflow is active, update the
-[package version](Python/lumic/pyproject.toml) and
-[changelog](Python/lumic/CHANGELOG.md) in a PR. After merging, tag the merged
-commit with `lumic-v<version>`. Review the wheel and source distribution
-from the build before starting a separate publishing workflow.
+To rehearse a build, open **Actions → Build backend release → Run workflow**
+and select `main`. Download the resulting `backend-rehearsal-<run-id>`
+artifact from the run summary. Use this to check packaging and installation
+without creating a release tag.
+
+To prepare a release, update the [package version](Python/lumic/pyproject.toml)
+and [changelog](Python/lumic/CHANGELOG.md) in a PR. After merging, tag that
+commit with `lumic-v<version>` and push the tag. The workflow verifies that
+the tag matches the package version and points to a commit on `main`.
+Review the source archive and wheel in the `<tag>-distributions` artifact.
+
+Publishing is a separate step. The upload workflows are still in
+[workflow-templates](.github/workflow-templates/). Update and verify the
+TestPyPI and PyPI Trusted Publisher settings before activating them. They
+require a successful tag-triggered build and manual approval.
 
 ## Upgrading an existing Python 3.9 setup
 
@@ -117,7 +127,7 @@ conda env create --name unmixing-env-py312 --file environment.yml
 conda activate unmixing-env-py312
 python -m pip check
 cd Python
-python -m pytest
+python -m pytest --ignore-glob='tests/test_plugin_*.py'
 ```
 
 To use the new environment in Jupyter, register a separate kernel:
