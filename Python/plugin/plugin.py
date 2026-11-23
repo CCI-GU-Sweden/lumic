@@ -1,26 +1,29 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import replace
 from functools import partial
 from pathlib import Path
-
 import locale
-locale.setlocale(locale.LC_NUMERIC, "C")
+from threading import RLock
 
 import numpy as np
 from matplotlib import colormaps
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+from matplotlib.colors import hsv_to_rgb
 from multiprocess import Pool
 from qtpy.QtCore import QSettings, Qt
 from qtpy.QtWidgets import (
-    QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QGridLayout, QGroupBox, QHBoxLayout, QRadioButton,
+    QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QFrame, QGridLayout, QGroupBox, QHBoxLayout, QRadioButton,
     QLabel, QMessageBox, QPlainTextEdit, QPushButton, QScrollArea, QSlider, QSpinBox,
     QTabWidget, QVBoxLayout, QWidget,
 )
 # Let qtpy select the Qt binding before Matplotlib initializes its Qt backend.
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from threadpoolctl import threadpool_limits
+from skimage.color import rgb2lab
+from napari.qt.threading import create_worker
 
 from lumic import (
     SpectralImage,
@@ -28,11 +31,63 @@ from lumic import (
     positive_least_squares, spectral_uniqueness_map, unique_profiles,
 )
 from lumic.evaluation import residual_pca_from_residuals
+from lumic.data import download_cos7_data
 from lumic.io import open_image
 from lumic.utils import select_analysis_pixels
 
+from .spectra_io import load_spectra_json, save_spectra_json, spectrum_objects, validate_reference_spectra
+
 
 RAW_LAYER_NAME = "Raw spectral image"
+_IMAGE_READ_LOCALE_LOCK = RLock()
+
+
+@contextmanager
+def _image_read_locale():
+    """Use decimal points for native file readers, then restore the locale.
+
+    Setting LC_NUMERIC at import time is insufficient: Qt or another library
+    can change it later. Keep the override around synchronous plugin reads on
+    the Qt main thread, without processing UI events inside the context.
+    setlocale is process-global; the lock serializes this plugin's contexts,
+    but cannot coordinate unrelated libraries that change the locale.
+    """
+    with _IMAGE_READ_LOCALE_LOCK:
+        previous = locale.setlocale(locale.LC_NUMERIC)
+        try:
+            if previous != "C":
+                locale.setlocale(locale.LC_NUMERIC, "C")
+            yield
+        finally:
+            if locale.setlocale(locale.LC_NUMERIC) != previous:
+                locale.setlocale(locale.LC_NUMERIC, previous)
+
+
+def _same_layer(left, right):
+    """Compare layer identity through napari's injected viewer proxies."""
+    return getattr(left, "__wrapped__", left) is getattr(right, "__wrapped__", right)
+
+
+def _distinct_component_colors(colors):
+    """Keep earlier colours; replace collisions using perceptual Lab distance."""
+    colors = np.asarray(colors, dtype=float).copy()
+    if len(colors) < 2:
+        return colors
+    # Saturated candidates with moderate lightness stay visible in plots and
+    # on dark abundance maps. Choose the furthest from all colours already used.
+    hsv = np.array([(h, s, v) for h in np.linspace(0, 1, 180, endpoint=False)
+                    for s in (.65, .85, 1.) for v in (.65, .85, 1.)])
+    candidates = hsv_to_rgb(hsv)
+    candidate_lab = rgb2lab(candidates)
+    usable = (candidate_lab[:, 0] >= 35) & (candidate_lab[:, 0] <= 80)
+    candidates, candidate_lab = candidates[usable], candidate_lab[usable]
+    lab = rgb2lab(colors)
+    for index in range(1, len(colors)):
+        if np.linalg.norm(lab[:index] - lab[index], axis=1).min() < 25:
+            distances = np.linalg.norm(candidate_lab[:, None] - lab[None, :index], axis=2).min(axis=1)
+            replacement = np.argmax(distances)
+            colors[index], lab[index] = candidates[replacement], candidate_lab[replacement]
+    return colors
 
 
 def canonicalize_detector_plane(image):
@@ -66,13 +121,18 @@ class SpectralUnmixingWidget(QWidget):
         self.viewer = napari_viewer
         self.image = None
         self.image_path = None
-        self.last_image_folder = Path(QSettings().value("spectral_unmixing/last_image_folder", str(Path.home()), type=str))
+        self.settings = QSettings("Lumic", "napari-lumic-cci")
+        self.last_image_folder = Path(self.settings.value(
+            "spectral_unmixing/last_image_folder", str(Path.home()), type=str))
         self.plane_position = (0, 0)
         self.raw_img = None
         self.wave = None
         self.spectral_axis_label = "Wavelength (nm)"
         self.initial_spectra = None
         self.optimized_spectra = None
+        self.initial_spectrum_objects = []
+        self.optimized_spectrum_objects = []
+        self._example_worker = None
         self.manual_spectra = []
         self.manual_points = []
         self.pending_manual_spectrum = None
@@ -134,12 +194,29 @@ class SpectralUnmixingWidget(QWidget):
         self.tabs.setCornerWidget(self.reset_button, Qt.TopRightCorner)
         self.input_tab, inputs = self._tab("Input")
         self.open_button = QPushButton("Browse image...")
+        self.open_button.setToolTip("Import your desired image")
         self.file_label = QLabel("No file selected")
         self.file_label.setWordWrap(True)
         self.summary_text = QPlainTextEdit()
         self.summary_text.setReadOnly(True)
         self.summary_text.setPlaceholderText("Image reader summary appears after loading.")
         inputs.addWidget(self.open_button)
+        inputs.addSpacing(12)
+        divider = QFrame()
+        divider.setFrameShape(QFrame.HLine)
+        divider.setFrameShadow(QFrame.Sunken)
+        inputs.addWidget(divider)
+        inputs.addSpacing(12)
+        self.example_snr = QComboBox()
+        self.example_snr.addItems(["Low", "Medium", "High"])
+        self.example_snr.setCurrentText("High")
+        self._row(inputs, "COS-7 example SNR", self.example_snr)
+        self.example_button = QPushButton("Load example data")
+        self.example_button.setToolTip(
+            "Download the selected COS-7 mixed acquisition from BioImage Archive "
+            "(about 145 MB), or reuse the cached file."
+        )
+        inputs.addWidget(self.example_button)
         inputs.addWidget(self.file_label)
         inputs.addWidget(self.summary_text)
         self.plane_controls = {}
@@ -159,12 +236,17 @@ class SpectralUnmixingWidget(QWidget):
 
         self.selection_tab, selection = self._tab("Spectra selection")
         self.reference_mode = QComboBox()
-        self.reference_mode.addItems(["Select reference mode", "Automatic", "Manual"])
+        self.reference_mode.addItems(["Select reference mode", "Automatic", "Manual", "Load JSON"])
         self._row(selection, "References", self.reference_mode)
         self.components_input = QSpinBox()
         self.components_input.setRange(1, 64)
         self.components_input.setValue(4)
-        self._row(selection, "Number of components", self.components_input)
+        self.components_controls = QWidget()
+        components_layout = QHBoxLayout(self.components_controls)
+        components_layout.setContentsMargins(0, 0, 0, 0)
+        components_layout.addWidget(QLabel("Number of components"))
+        components_layout.addWidget(self.components_input)
+        selection.addWidget(self.components_controls)
         self.automatic_controls = QWidget()
         automatic = QVBoxLayout(self.automatic_controls)
         self.quantile_input = QDoubleSpinBox()
@@ -193,6 +275,19 @@ class SpectralUnmixingWidget(QWidget):
         self.manual_status_label.setWordWrap(True)
         manual.addWidget(self.manual_status_label)
         selection.addWidget(self.manual_controls)
+        self.json_controls = QWidget()
+        json_layout = QVBoxLayout(self.json_controls)
+        self.load_spectra_button = QPushButton("Load spectra JSON...")
+        self.load_spectra_button.setToolTip(
+            "Load one spectrum or a collection. Channel counts, wavelength order and "
+            "available detection bands must match the image; values are not resampled. "
+            "Loaded spectra initialize optimization."
+        )
+        self.json_status_label = QLabel("No spectra JSON loaded.")
+        self.json_status_label.setWordWrap(True)
+        json_layout.addWidget(self.load_spectra_button)
+        json_layout.addWidget(self.json_status_label)
+        selection.addWidget(self.json_controls)
         self.live_figure, self.live_canvas, self.live_ax = self._plot(
             selection, "Live pixel spectrum", "Intensity",
         )
@@ -204,10 +299,9 @@ class SpectralUnmixingWidget(QWidget):
             "Review the selected spectra, then confirm to calculate the initial distance layer and enable unmixing."
         )
         selection.addWidget(self.confirm_manual_button)
-        self.save_initial_button = QPushButton("Save initial reference spectra as CSVs...")
+        self.save_initial_button = QPushButton("Save initial reference spectra...")
         self.save_initial_button.setToolTip(
-            "Save one CSV per component, with wavelength_nm and spectral_intensity columns. "
-            "Uses detector_channel_index when wavelength metadata is unavailable."
+            "Save all reference spectra and their metadata in one JSON file."
         )
         selection.addWidget(self.save_initial_button)
         selection.addStretch()
@@ -260,7 +354,7 @@ class SpectralUnmixingWidget(QWidget):
         blend_row.addWidget(self.additive_radio)
         blend_row.addWidget(self.opaque_radio)
         unmixing.addLayout(blend_row)
-        self.save_optimized_button = QPushButton("Save optimized reference spectra as CSVs...")
+        self.save_optimized_button = QPushButton("Save optimised spectra...")
         self.save_optimized_button.setToolTip(self.save_initial_button.toolTip())
         unmixing.addWidget(self.save_optimized_button)
         self.save_abundance_button = QPushButton("Save abundance maps as OME-TIFF...")
@@ -343,6 +437,8 @@ class SpectralUnmixingWidget(QWidget):
 
     def _connect_events(self):
         self.open_button.clicked.connect(self.browse_czi)
+        self.example_button.clicked.connect(self.load_example_data)
+        self.load_spectra_button.clicked.connect(self.browse_spectra_json)
         self.reset_button.clicked.connect(self.reset_all)
         self.reference_mode.currentTextChanged.connect(self._reset_reference_state)
         self.components_input.valueChanged.connect(self._reset_reference_state)
@@ -383,10 +479,91 @@ class SpectralUnmixingWidget(QWidget):
         if filename:
             self.load_czi(filename)
 
+    def load_example_data(self):
+        if self.is_busy:
+            return
+        snr = self.example_snr.currentText().lower()
+        self._set_busy(True, f"Downloading/loading {snr}-SNR COS-7 example from BioImage Archive...")
+        # Handle errors in the UI instead of re-raising them on Qt's event loop.
+        worker = create_worker(download_cos7_data, snr=snr, progress=True, _ignore_errors=True)
+        worker.returned.connect(self._example_downloaded)
+        worker.errored.connect(self._example_download_failed)
+        worker.finished.connect(self._example_download_finished)
+        self._example_worker = worker
+        worker.start()
+
+    def _example_downloaded(self, paths):
+        if len(paths) != 1:
+            self._warn("Expected one COS-7 mixed acquisition.")
+            return
+        self.load_czi(paths[0])
+
+    def _example_download_finished(self):
+        self._example_worker = None
+        self._set_busy(False)
+
+    def _example_download_failed(self, exc):
+        self._warn(f"Could not load COS-7 example: {exc}")
+
+    def browse_spectra_json(self):
+        if self.is_busy or self.image is None:
+            return
+        filename, _ = QFileDialog.getOpenFileName(
+            self, "Load reference spectra", str(self.last_image_folder), "JSON spectra (*.json)",
+        )
+        if filename:
+            self.load_reference_json(filename)
+
+    def load_reference_json(self, filename):
+        if self.is_busy or self.image is None or self.reference_mode.currentText() != "Load JSON":
+            return
+        self._set_busy(True, "Loading reference spectra...")
+        try:
+            references = load_spectra_json(filename)
+            validate_reference_spectra(references, self.image)
+            # Use the same retained hull pixel pool as automatic selection;
+            # only the source of the initial component profiles changes.
+            with threadpool_limits(limits=1):
+                retained = select_analysis_pixels(self.raw_img, median_quantile=self.quantile_input.value())
+                subset = self.image.unfold().data[retained.indices]
+                count = len(references)
+                if not len(subset) or count > min(subset.shape):
+                    raise ValueError("Too few retained pixels or channels for the loaded component count.")
+                if count == 1:
+                    local = np.array([np.argmax(subset.sum(axis=1))])
+                else:
+                    state = np.random.get_state()
+                    try:
+                        np.random.seed(2026)
+                        _, local = essential_spectral_pixles(subset, npc=count)
+                    finally:
+                        np.random.set_state(state)
+                pool = retained.indices[local]
+                if len(pool) < count:
+                    raise ValueError("Too few hull pixels for the loaded component count.")
+            self._reset_reference_state()
+            previous = self.components_input.blockSignals(True)
+            self.components_input.setValue(count)
+            self.components_input.blockSignals(previous)
+            self.initial_spectra = np.stack([s.values for s in references])
+            self.initial_spectrum_objects = spectrum_objects(
+                [s.values for s in references], self.image, self.image_path, self.plane_position,
+                "initial", "Load JSON", references,
+            )
+            self.pool_indices = pool
+            self._plot_references()
+            self._refresh_distance_layers()
+            self.json_status_label.setText(f"Loaded {count} components from {Path(filename).name}.")
+            self._set_status(f"Loaded {count} reference spectra. Ready for optimization and unmixing.")
+        except Exception as exc:
+            self._warn(f"Could not load reference spectra: {exc}")
+        finally:
+            self._set_busy(False)
+
     def load_czi(self, image_path):
         """Load either supported format; retain the previous image on read failure."""
         try:
-            with open_image(Path(image_path)) as reader:
+            with _image_read_locale(), open_image(Path(image_path)) as reader:
                 summary = reader.summary()
                 axes = reader.axes
                 sizes = dict(zip(axes, reader.shape))
@@ -397,7 +574,7 @@ class SpectralUnmixingWidget(QWidget):
             return
         self.image_path = Path(image_path)
         self.last_image_folder = self.image_path.resolve().parent
-        QSettings().setValue("spectral_unmixing/last_image_folder", str(self.last_image_folder))
+        self.settings.setValue("spectral_unmixing/last_image_folder", str(self.last_image_folder))
         self.plane_position = (0, 0)
         for axis, (row, slider, label) in self.plane_controls.items():
             size = sizes.get(axis, 1)
@@ -417,7 +594,7 @@ class SpectralUnmixingWidget(QWidget):
         t = self.plane_controls["T"][1].value()
         z = self.plane_controls["Z"][1].value()
         try:
-            with open_image(self.image_path) as reader:
+            with _image_read_locale(), open_image(self.image_path) as reader:
                 image = canonicalize_detector_plane(reader.read(t=t, z=z))
             rgb = image.to_rgb() if image.data.shape[0] >= 3 else None
         except Exception as exc:
@@ -451,6 +628,7 @@ class SpectralUnmixingWidget(QWidget):
                 self.raw_layer.events.visible.disconnect(self._update_channel_slider_state)
             self.raw_layer = self.viewer.add_image(
                 self.raw_img[0], name=RAW_LAYER_NAME, rgb=False, colormap="gray", auto_contrast=True,
+                **_plane_transform(self.image),
             )
             self.raw_layer.events.visible.connect(self._update_channel_slider_state)
         else:
@@ -481,6 +659,8 @@ class SpectralUnmixingWidget(QWidget):
 
     def _reset_reference_state(self, *args):
         self.initial_spectra = None
+        self.initial_spectrum_objects = []
+        self.json_status_label.setText("No spectra JSON loaded.")
         self.manual_spectra = []
         self.manual_points = []
         self.pending_manual_spectrum = None
@@ -489,11 +669,12 @@ class SpectralUnmixingWidget(QWidget):
         self._hide_layers([self.hull_layer, self.reference_points_layer, self.initial_distance_layer])
         self._invalidate_fit()
         self._blank_plot(self.figure, self.canvas, self.ax, "Initial reference spectra", "Spectral intensity")
-        self.manual_status_label.setText(f"Click a raw-data pixel, then set {self.components_input.value()} references.")
+        self.manual_status_label.setText("Click raw-data pixels and set references, then confirm when finished.")
         self._restore_action_states()
 
     def _invalidate_fit(self):
         self.optimized_spectra = None
+        self.optimized_spectrum_objects = []
         self._set_fit_components(0)
         self.abundance_img = None
         self.residual_img = None
@@ -516,6 +697,8 @@ class SpectralUnmixingWidget(QWidget):
         ready = not self.is_busy
         has_image = self.image is not None
         self.open_button.setEnabled(ready)
+        self.example_button.setEnabled(ready)
+        self.example_snr.setEnabled(ready)
         self.reset_button.setEnabled(ready)
         self.tabs.setTabToolTip(0, "Choose a spectral image")
         for index, enabled, enabled_tip, disabled_tip in (
@@ -525,12 +708,17 @@ class SpectralUnmixingWidget(QWidget):
         ):
             self.tabs.setTabEnabled(index, enabled)
             self.tabs.setTabToolTip(index, enabled_tip if enabled else disabled_tip)
-        self.automatic_controls.setVisible(self.reference_mode.currentText() == "Automatic")
+        self.automatic_controls.setVisible(self.reference_mode.currentText() in ("Automatic", "Load JSON"))
+        self.optimize_button.setVisible(self.reference_mode.currentText() == "Automatic")
+        self.json_controls.setVisible(self.reference_mode.currentText() == "Load JSON")
+        self.load_spectra_button.setEnabled(ready and has_image)
+        self.components_controls.setVisible(self.reference_mode.currentText() != "Manual")
+        self.components_input.setEnabled(ready and self.reference_mode.currentText() not in ("Manual", "Load JSON"))
         self.manual_controls.setVisible(self.reference_mode.currentText() == "Manual")
         self.confirm_manual_button.setVisible(self.reference_mode.currentText() == "Manual")
         self.confirm_manual_button.setEnabled(
             ready and self.reference_mode.currentText() == "Manual"
-            and len(self.manual_spectra) == self.components_input.value()
+            and bool(self.manual_spectra)
             and self.initial_spectra is None
         )
         self.optimize_button.setEnabled(ready and has_image)
@@ -575,6 +763,7 @@ class SpectralUnmixingWidget(QWidget):
         blocked = [(control, control.blockSignals(True)) for control in controls]
         try:
             self.reference_mode.setCurrentIndex(0)
+            self.example_snr.setCurrentText("High")
             self.components_input.setValue(4)
             self.quantile_input.setValue(0.2)
             self.pools_input.setValue(4)
@@ -647,6 +836,9 @@ class SpectralUnmixingWidget(QWidget):
                     raise ValueError("Selected reference spectra must have positive finite signal.")
             self._invalidate_fit()
             self.initial_spectra = initial
+            self.initial_spectrum_objects = spectrum_objects(
+                initial, self.image, self.image_path, self.plane_position, "initial", "Automatic",
+            )
             self.pool_indices = pool
             positions = np.column_stack(np.unravel_index(pool, self.raw_img.shape[1:]))
             self.hull_layer = self._points_layer(
@@ -668,7 +860,7 @@ class SpectralUnmixingWidget(QWidget):
         if self.is_busy or self.image is None or "mouse_press" not in str(getattr(event, "type", "")).lower():
             return
         # A points layer can intercept clicks; only raw-image clicks select spectra.
-        if viewer.layers.selection.active is not self.raw_layer or not self.raw_layer.visible:
+        if not _same_layer(viewer.layers.selection.active, self.raw_layer) or not self.raw_layer.visible:
             return
         pixel = self._event_pixel(event)
         if pixel is None:
@@ -681,11 +873,11 @@ class SpectralUnmixingWidget(QWidget):
         self.live_figure.tight_layout()
         self.live_canvas.draw_idle()
         self._set_status(f"Pixel y={y}, x={x}.")
-        if self.reference_mode.currentText() == "Manual" and len(self.manual_spectra) < self.components_input.value():
+        if self.reference_mode.currentText() == "Manual":
             self.pending_manual_point = pixel
             self.pending_manual_spectrum = spectrum
             self.manual_status_label.setText(f"Pixel y={y}, x={x}; set reference "
-                                             f"{len(self.manual_spectra) + 1}/{self.components_input.value()}.")
+                                             f"{len(self.manual_spectra) + 1}, or confirm the current selection.")
             self._restore_action_states()
 
     def accept_manual_spectrum(self):
@@ -696,6 +888,13 @@ class SpectralUnmixingWidget(QWidget):
         if not np.isfinite(spectrum).all() or np.any(spectrum < 0) or not np.isfinite(total) or total <= 0:
             self._warn("Choose a pixel with finite nonnegative signal and positive total intensity.")
             return
+        # Browsing pixels leaves a confirmed fit alone; accepting another
+        # reference starts a new selection with the existing references kept.
+        if self.initial_spectra is not None:
+            self.initial_spectra = None
+            self.initial_spectrum_objects = []
+            self._invalidate_fit()
+            self._hide_layers([self.initial_distance_layer])
         self.manual_spectra.append(spectrum.copy())
         self.manual_points.append(self.pending_manual_point)
         self.pending_manual_spectrum = self.pending_manual_point = None
@@ -704,31 +903,33 @@ class SpectralUnmixingWidget(QWidget):
             self._colors(len(self.manual_spectra)), 20,
         )
         self._plot_references(np.vstack(self.manual_spectra))
-        selected, required = len(self.manual_spectra), self.components_input.value()
-        self.manual_status_label.setText(f"Set {selected}/{required} manual references.")
-        if selected == required:
-            self.manual_status_label.setText(
-                f"Set {selected}/{required} manual references. Review the plot, then click Confirm manual references."
-            )
-            self._set_status("Review the manual spectra and confirm when ready.")
+        selected = len(self.manual_spectra)
+        self.manual_status_label.setText(
+            f"Set {selected} manual references. Add more or click Confirm manual references."
+        )
+        self._set_status("Review the manual spectra and confirm when ready.")
         self.viewer.layers.selection.active = self.raw_layer
         self._restore_action_states()
 
     def confirm_manual_references(self):
         if (self.is_busy or self.reference_mode.currentText() != "Manual"
-                or len(self.manual_spectra) != self.components_input.value()
+                or not self.manual_spectra
                 or self.initial_spectra is not None):
             return
         self._set_busy(True, "Calculating initial distance from spectral center...")
         try:
             self.initial_spectra = np.vstack(self.manual_spectra)
+            self.initial_spectrum_objects = spectrum_objects(
+                self.initial_spectra, self.image, self.image_path, self.plane_position, "initial", "Manual",
+            )
             if self._refresh_distance_layers():
-                self.manual_status_label.setText("Manual references confirmed. Ready for unmixing.")
+                self.manual_status_label.setText(f"Confirmed {len(self.manual_spectra)} manual references. Ready for unmixing.")
                 self._set_status("Manual references confirmed; initial distance layer calculated.")
             else:
                 self.manual_status_label.setText("Manual references confirmed; distance layer unavailable.")
         except Exception as exc:
             self.initial_spectra = self.pool_indices = None
+            self.initial_spectrum_objects = []
             self._warn(f"Manual reference confirmation failed: {exc}")
         finally:
             self._set_busy(False)
@@ -745,13 +946,14 @@ class SpectralUnmixingWidget(QWidget):
         try:
             unfolded = self.image.unfold()
             pixels = unfolded.data
+            initial = np.stack([s.values for s in self.initial_spectrum_objects])
             with threadpool_limits(limits=1):
                 if is_manual:
                     # Hold clicked references on their measured scale.
-                    optimized = self.initial_spectra.copy()
+                    optimized = initial.copy()
                 else:
                     _, optimized, _, diagnostics = mcr_als(
-                        pixels[self.pool_indices], self.initial_spectra.copy(), nIter=500,
+                        pixels[self.pool_indices], initial.copy(), nIter=500,
                         normL=False, tol_percent=0.01, return_diagnostics=True,
                     )
                 # Fit and save the same unnormalized basis, without changing
@@ -775,6 +977,10 @@ class SpectralUnmixingWidget(QWidget):
                 residual = unfolded.fold_spectra(pixels.astype(float) - abundance @ optimized).data
             self._clear_pca()
             self.optimized_spectra = optimized
+            self.optimized_spectrum_objects = spectrum_objects(
+                optimized, self.image, self.image_path, self.plane_position, "optimized",
+                self.reference_mode.currentText(), self.initial_spectrum_objects,
+            )
             self.abundance_img = maps
             self.residual_img = residual
             self._set_fit_components(len(optimized))
@@ -810,7 +1016,7 @@ class SpectralUnmixingWidget(QWidget):
             self._refresh_distance_layers()
             active_maps = self.abundance_layers[:len(maps.data)]
             self._hide_layers([layer for layer in self.viewer.layers
-                               if not any(layer is abundance for abundance in active_maps)])
+                               if not any(_same_layer(layer, abundance) for abundance in active_maps)])
             fit_status = (
                 "Fixed manual references; nonnegative least-squares abundance fit. " if is_manual
                 else f"ALS: {diagnostics.iterations_completed} iterations; {diagnostics.stop_reason}. "
@@ -920,10 +1126,11 @@ class SpectralUnmixingWidget(QWidget):
 
         Each component competes with its maximum sampled intensity in a bin.
         Ties go to the first component. Without wavelengths use a categorical palette.
+        Replace perceptually similar colours for later components in either case.
         """
         spectra = np.asarray(spectra)
         if wavelengths is None:
-            return SpectralUnmixingWidget._colors(len(spectra))[:, :3]
+            return _distinct_component_colors(SpectralUnmixingWidget._colors(len(spectra))[:, :3])
         wavelengths = np.asarray(wavelengths)
         bins = np.floor(wavelengths / 30).astype(int)
         selected = np.argmax(spectra, axis=1)
@@ -941,7 +1148,8 @@ class SpectralUnmixingWidget(QWidget):
         rgb = np.array([[0.55, 0, 1], [0.35, 0, 1], [0, 0, 1], [0, 1, 1],
                         [0, 1, 0], [1, 1, 0], [1, 0.65, 0], [1, 0, 0], [1, 0, 0]])
         peaks = wavelengths[selected]
-        return np.column_stack([np.interp(peaks, anchors, rgb[:, channel]) for channel in range(3)])
+        colors = np.column_stack([np.interp(peaks, anchors, rgb[:, channel]) for channel in range(3)])
+        return _distinct_component_colors(colors)
 
     def _plot_references(self, spectra=None):
         spectra = self.initial_spectra if spectra is None else spectra
@@ -1125,34 +1333,28 @@ class SpectralUnmixingWidget(QWidget):
                 layer.visible = check.isChecked()
 
     def _export_reference_spectra(self, stage):
-        spectra = (self.initial_spectra if stage == "initial" else
-                   self.abundance_img.unmixing["spectra"] if self.abundance_img is not None else None)
-        if self.is_busy or spectra is None:
+        spectra = self.initial_spectrum_objects if stage == "initial" else self.optimized_spectrum_objects
+        if self.is_busy or not spectra:
             return
-        directory = QFileDialog.getExistingDirectory(
-            self, f"Save {stage} reference spectra", str(self.image_path.parent),
+        default = f"{self.image_path.stem}_{stage}_spectra.json"
+        filename, _ = QFileDialog.getSaveFileName(
+            self, "Save Spectra", str(self.image_path.parent / default), "JSON spectra (*.json)",
+            options=QFileDialog.DontConfirmOverwrite,
         )
-        if not directory:
+        if not filename:
+            return
+        destination = Path(filename)
+        if destination.suffix.lower() != ".json":
+            destination = destination.with_name(destination.name + ".json")
+        if destination.exists() and QMessageBox.question(
+            self, "Overwrite spectra?", f"Replace the existing file?\n{destination}",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
+        ) != QMessageBox.Yes:
             return
         try:
-            # A fresh folder keeps each export together without overwriting an
-            # earlier set. Preserve the exact spectra used in the fit.
-            base = Path(directory) / f"{Path(self.file_label.text()).stem}_{stage}_reference_spectra"
-            destination = base
-            suffix = 2
-            while destination.exists():
-                destination = base.with_name(f"{base.name}_{suffix}")
-                suffix += 1
-            destination.mkdir()
-            coordinate = "wavelength_nm" if self.image.wavelengths_nm is not None else "detector_channel_index"
-            for index, spectrum in enumerate(spectra, start=1):
-                np.savetxt(
-                    destination / f"{stage}_component_{index}.csv",
-                    np.column_stack((self.wave, spectrum)), delimiter=",", fmt="%.17g",
-                    header=f"{coordinate},spectral_intensity", comments="",
-                )
-            self._set_status(f"Saved {len(spectra)} {stage} reference CSVs to {destination}.")
-        except OSError as exc:
+            save_spectra_json(spectra, destination)
+            self._set_status(f"Saved {len(spectra)} {stage} reference spectra to {destination}.")
+        except (OSError, ValueError, TypeError) as exc:
             self._warn(f"Could not save reference spectra: {exc}")
 
     def _export_abundance_image(self):
@@ -1245,14 +1447,15 @@ class SpectralUnmixingWidget(QWidget):
                 layer.visible = False
 
     def _layer_is_in_viewer(self, layer):
-        return layer is not None and any(item is layer for item in self.viewer.layers)
+        return layer is not None and any(_same_layer(item, layer) for item in self.viewer.layers)
 
     def _update_channel_slider_state(self, event=None):
         active = self.viewer.layers.selection.active
         self.channel_slider.setEnabled(
             not self.is_busy and self.raw_img is not None
             and self._layer_is_in_viewer(active) and active.visible
-            and (active is self.raw_layer or (active is self.residual_layer and self.residual_img is not None))
+            and (_same_layer(active, self.raw_layer)
+                 or (_same_layer(active, self.residual_layer) and self.residual_img is not None))
         )
         self.pc_controls.setVisible(
             self.pca_result is not None and self._layer_is_in_viewer(self.pca_layer)
@@ -1308,11 +1511,11 @@ class SpectralUnmixingWidget(QWidget):
         layer = self.viewer.layers.selection.active
         if not self._layer_is_in_viewer(layer) or not layer.visible:
             return None
-        if layer is self.initial_distance_layer or layer is self.optimized_distance_layer:
+        if _same_layer(layer, self.initial_distance_layer) or _same_layer(layer, self.optimized_distance_layer):
             name = "D<sub>sc</sub>"
-        elif any(layer is item for item in self.abundance_layers):
+        elif any(_same_layer(layer, item) for item in self.abundance_layers):
             name = "Rel. abundance"
-        elif any(layer is item for item in (self.raw_layer, self.rgb_layer, self.residual_layer, self.pca_layer)):
+        elif any(_same_layer(layer, item) for item in (self.raw_layer, self.rgb_layer, self.residual_layer, self.pca_layer)):
             name = "Intensity"
         else:
             return None

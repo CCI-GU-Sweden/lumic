@@ -30,7 +30,7 @@ nav:
           - Evaluate simulation recovery: backend/evaluate-simulation-recovery.md
       - Save images and spectra: backend/save-results.md
   - Napari Plugin:
-      - Overview: plugins/overview.md
+      - Quickstart: plugins/overview.md
       - Load data: plugins/1-input.md
       - Select spectra: plugins/2-spectra-selection.md
       - Unmix images: plugins/3-unmixing.md

@@ -3,8 +3,9 @@ from types import SimpleNamespace
 import numpy as np
 from qtpy.QtWidgets import QApplication
 from napari.components import ViewerModel
+from skimage.color import rgb2lab
 
-from plugin.plugin import SpectralUnmixingWidget
+from plugin.plugin import SpectralUnmixingWidget, _distinct_component_colors
 
 
 def test_abundance_controls_and_residual_plot():
@@ -106,8 +107,35 @@ def test_component_colors_follow_winning_wavelength_bins():
                         [4, 0, 6, 0, 1, 7], [1, 0, 1, 0, 0, 0]])
     colors = SpectralUnmixingWidget._component_colors(spectra, wavelengths)
     # Blue wins at 450, orange at 600, red at 630; the last component
-    # wins no bin and falls back to its first overall peak at 450.
-    np.testing.assert_allclose(colors, [[0, 0, 1], [1, 0.4333333333, 0],
-                                        [1, 0, 0], [0, 0, 1]], atol=1e-8)
+    # wins no bin and falls back to its first overall peak at 450. Its duplicate
+    # blue is replaced, preserving the colours assigned to earlier components.
+    np.testing.assert_allclose(colors[:3], [[0, 0, 1], [1, 0.4333333333, 0],
+                                           [1, 0, 0]], atol=1e-8)
+    assert np.all(np.linalg.norm(rgb2lab(colors[:3]) - rgb2lab(colors[3]), axis=1) >= 25)
     fallback = SpectralUnmixingWidget._component_colors(spectra, None)
     np.testing.assert_allclose(fallback, SpectralUnmixingWidget._colors(4)[:, :3])
+
+
+def test_similar_spectrum_colors_are_replaced_without_changing_earlier_choices():
+    preferred = np.array([[0., 0., 1.], [0., .01, 1.], [0., 0., 1.], [0., 0., 1.]])
+    before = preferred.copy()
+    result = _distinct_component_colors(preferred)
+    np.testing.assert_array_equal(preferred, before)
+    np.testing.assert_array_equal(result[0], preferred[0])
+    for count in range(1, len(result) + 1):
+        # Adding a later colour never recolours an earlier assignment.
+        np.testing.assert_array_equal(_distinct_component_colors(preferred[:count]), result[:count])
+    lab = rgb2lab(result)
+    for index in range(1, len(lab)):
+        assert np.all(np.linalg.norm(lab[:index] - lab[index], axis=1) >= 25)
+
+
+def test_overlapping_wavelength_peaks_receive_distinct_colors():
+    spectra = np.array([[1., 3., 1.], [2., 6., 2.], [3., 9., 3.], [4., 12., 4.]])
+    before = spectra.copy()
+    colors = SpectralUnmixingWidget._component_colors(spectra, [600, 620, 650])
+    np.testing.assert_array_equal(spectra, before)
+    lab = rgb2lab(colors)
+    for index in range(1, len(lab)):
+        assert np.all(np.linalg.norm(lab[:index] - lab[index], axis=1) >= 25)
+    np.testing.assert_array_equal(colors, SpectralUnmixingWidget._component_colors(spectra, [600, 620, 650]))

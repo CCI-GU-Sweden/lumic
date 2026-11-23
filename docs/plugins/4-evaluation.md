@@ -13,6 +13,11 @@ minus the fitted signal) for unexplained variation and spatial structure.
    show plotted curves with equal opacity. Moving the PC slider highlights its
    loading again; curve selection and score-map selection are independent.
 
+Principal components are ordered by decreasing explained residual variance:
+**PC 1 is the most significant in terms of variance explained**, followed by
+PC 2, PC 3, and so on. The percentages in the loading-curve legend show each
+component's contribution to the residual variance.
+
 The signed scores and loadings describe unexplained variation, not abundance.
 PCA helps assess the relative importance and structure of residual variation;
 the plugin does not provide a statistical significance test here.

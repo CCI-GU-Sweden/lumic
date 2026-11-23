@@ -1,4 +1,4 @@
-name: Publish plugin candidate to PyPI
+name: Publish plugin release to PyPI
 
 on:
   workflow_dispatch:
@@ -25,7 +25,7 @@ jobs:
       actions: read
       id-token: write
     steps:
-      - name: Verify candidate build
+      - name: Verify release build
         id: candidate
         env:
           GH_TOKEN: ${{ github.token }}
@@ -41,8 +41,8 @@ jobs:
               and .event == "push" and .status == "completed" and .conclusion == "success")
             | .head_branch
           ')
-          if [[ ! "$tag" =~ ^napari-lumic-v[0-9]+\.[0-9]+\.[0-9]+rc[0-9]+$ ]]; then
-            echo "Select a successful plugin release build for a napari-lumic-vX.Y.ZrcN tag." >&2
+          if [[ ! "$tag" =~ ^napari-lumic-v[0-9]+\.[0-9]+\.[0-9]+(rc[0-9]+)?$ ]]; then
+            echo "Select a successful plugin release build for a napari-lumic-vX.Y.Z or napari-lumic-vX.Y.ZrcN tag." >&2
             exit 1
           fi
           {
@@ -58,7 +58,7 @@ jobs:
           name: ${{ steps.candidate.outputs.artifact_name }}
           path: dist/
 
-      - name: Verify the upload contains only the candidate wheel and source archive
+      - name: Verify the upload contains only the release wheel and source archive
         env:
           VERSION: ${{ steps.candidate.outputs.version }}
         run: |
