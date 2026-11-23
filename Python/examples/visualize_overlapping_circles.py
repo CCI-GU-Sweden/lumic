@@ -12,10 +12,13 @@ import numpy as np
 from matplotlib.figure import Figure
 
 from lumic import (
+    Spectrum,
     essential_spectral_pixles,
+    load_spectra_json,
     mcr_als,
     normalize_components,
     positive_least_squares,
+    save_spectra_json,
     unique_profiles,
 )
 from lumic.evaluation import concentration_error_maps, evaluate_factors
@@ -68,6 +71,12 @@ DEFAULT_RECOVERY_OUTPUT = (
     Path(__file__).resolve().parents[1]
     / "data"
     / "visual-check-overlapping-circles-recovery.png"
+)
+DEFAULT_SPECTRA_OUTPUT = (
+    Path(__file__).resolve().parents[1]
+    / "examples"
+    / "output"
+    / "overlapping-circles-spectra"
 )
 COLORS = ("Blues", "Greens", "Reds")
 
@@ -267,6 +276,34 @@ def compare_to_simulation(blind_result, spatial, spectral_result, detector,
         -1, len(FLUOROPHORES)
     )[valid_pixels]
     true_spectra = spectral_result.ideal.spectra
+
+    # Save blind estimates before matching to simulation truth. Anonymous
+    # names make it clear that the solver did not identify fluorophores.
+    output_dir = DEFAULT_SPECTRA_OUTPUT
+    output_dir.mkdir(parents=True, exist_ok=True)
+    initial_objects = [
+        Spectrum(values, detector.channel_centers, name=f"Initial component {index + 1}",
+                 provenance={"method": "convex hull and unique profiles",
+                             "normalization": "L1", "source": "simulated detector pixels"})
+        for index, values in enumerate(blind_result["initial_spectra"])
+    ]
+    fitted_objects = [
+        Spectrum(values, detector.channel_centers, name=f"Blind component {index + 1}",
+                 provenance={"method": "MCR-ALS", "status": blind_result["status"],
+                             "source": "simulated detector pixels"})
+        for index, values in enumerate(blind_result["fitted_spectra"])
+    ]
+    true_objects = [
+        Spectrum(values, detector.channel_centers, name=name,
+                 provenance={"source": "offline FPbase simulation truth"})
+        for name, values in zip(FLUOROPHORES, true_spectra)
+    ]
+    save_spectra_json(initial_objects, output_dir / "initial-blind-spectra.json")
+    save_spectra_json(fitted_objects, output_dir / "fitted-blind-spectra.json")
+    save_spectra_json(true_objects, output_dir / "simulation-truth-spectra.json")
+    # Demonstrate the public loader and retain objects for downstream plotting.
+    loaded_fitted_spectra = load_spectra_json(output_dir / "fitted-blind-spectra.json")
+    print(f"Saved and reloaded {len(loaded_fitted_spectra)} blind spectra in {output_dir}")
 
     # Evaluation aligns component order only now, after blind fitting.
     initial = evaluate_factors(
