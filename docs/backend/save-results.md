@@ -93,9 +93,51 @@ imwrite(output / "preview-rgb.tif", preview.data, photometric="rgb")
 
 ## Save and reuse the optimized spectra
 
-The CSV has one row per detector channel and one column per fitted
-component, with a wavelength column first. It is easy to inspect or share
-without exporting the abundance maps.
+Use one `Spectrum` object per component to keep its name, detector wavelengths
+and processing history together. Save the related spectra in a single JSON
+collection. The numerical APIs still receive a NumPy matrix, so convert the
+objects to an array only where fitting starts.
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+from lumic import Spectrum, load_spectra_json, save_spectra_json
+
+fitted_spectrum_objects = [
+    Spectrum(
+        values=refined_spectra[index],
+        wavelengths_nm=unfolded.wavelengths_nm,
+        name=component_names[index],
+        provenance={"method": "MCR-ALS", "normalization": "L1"},
+    )
+    for index in range(len(component_names))
+]
+
+collection_path = output / "optimized-spectra.json"
+save_spectra_json(fitted_spectrum_objects, collection_path)
+reloaded_spectra = load_spectra_json(collection_path)
+
+# Convert to components × channels for the solver.
+spectra_matrix = np.stack([spectrum.values for spectrum in reloaded_spectra])
+```
+
+Plot the values against their attached wavelength labels:
+
+```python
+for spectrum in reloaded_spectra:
+    plt.plot(spectrum.wavelengths_nm, spectrum.values, label=spectrum.name)
+plt.xlabel("Wavelength (nm)")
+plt.ylabel("Normalized intensity")
+plt.legend()
+```
+
+The collection stores each component's values, wavelength labels, name and
+provenance together in one file. `Spectrum.save_json()` and
+`Spectrum.load_json()` remain available for individual references.
+
+The CSV below is a compact alternative when you only need a table for plotting
+or exchanging the numerical values. It does not preserve each spectrum's
+provenance metadata.
 
 ```python
 wavelengths_nm = unfolded.wavelengths_nm
