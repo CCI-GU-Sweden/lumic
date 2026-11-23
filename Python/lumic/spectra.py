@@ -87,17 +87,8 @@ class Spectrum:
             raise TypeError("name must be a string or None")
         object.__setattr__(self, "provenance", dict(self.provenance))
 
-    def save_json(self, path):
-        """Save a version 1 Lumic spectrum to a UTF-8 JSON file.
-
-        Preserve sample order, scale, and numeric dtypes up to 64 bits.
-        Provenance must contain JSON objects with string keys, lists, strings,
-        booleans, finite Python numbers or None; unsupported objects raise
-        TypeError. Serialization is validated before opening the destination.
-        An existing file is overwritten. Parent directories must exist.
-
-        Example: ``spectrum.save_json("reference.spectrum.json")``.
-        """
+    def _to_json_payload(self):
+        """Build and validate the version 1 JSON representation."""
         _validate_json_metadata(self.provenance)
         payload = {"format": "lumic-spectrum", "version": 1,
                    "name": self.name, "provenance": self.provenance}
@@ -113,6 +104,20 @@ class Spectrum:
                 payload[dtype_field] = array.dtype.str
         # Revalidate: frozen dataclasses still allow mutation of their arrays.
         type(self)._from_json_payload(payload)
+        return payload
+
+    def save_json(self, path):
+        """Save a version 1 Lumic spectrum to a UTF-8 JSON file.
+
+        Preserve sample order, scale, and numeric dtypes up to 64 bits.
+        Provenance must contain JSON objects with string keys, lists, strings,
+        booleans, finite Python numbers or None; unsupported objects raise
+        TypeError. Serialization is validated before opening the destination.
+        An existing file is overwritten. Parent directories must exist.
+
+        Example: ``spectrum.save_json("reference.spectrum.json")``.
+        """
+        payload = self._to_json_payload()
         text = json.dumps(payload, indent=2, ensure_ascii=False, allow_nan=False)
         Path(path).write_text(text + "\n", encoding="utf-8")
 
@@ -156,3 +161,50 @@ class Spectrum:
             wavelengths = _spectrum_json_array(payload["wavelengths_nm"],
                                                payload["wavelengths_dtype"], "wavelengths")
         return cls(values, wavelengths, name=payload["name"], provenance=payload["provenance"])
+
+
+def save_spectra_json(spectra, path):
+    """Save multiple Spectrum objects together in one Lumic JSON file.
+
+    The version 1 ``lumic-spectra`` collection format is compatible with
+    collection files already read by the napari plugin. Individual
+    ``Spectrum.save_json()`` files and methods are unchanged. At least one
+    spectrum is required. Existing destinations are overwritten; parent
+    directories must already exist.
+
+    Example: ``save_spectra_json([egfp, mcherry], "references.json")``.
+    """
+    try:
+        spectra = list(spectra)
+    except TypeError as exc:
+        raise ValueError("spectra must contain at least one Spectrum object") from exc
+    if not spectra or any(not isinstance(spectrum, Spectrum) for spectrum in spectra):
+        raise ValueError("spectra must contain at least one Spectrum object")
+
+    payload = {
+        "format": "lumic-spectra",
+        "version": 1,
+        "spectra": [spectrum._to_json_payload() for spectrum in spectra],
+    }
+    text = json.dumps(payload, indent=2, ensure_ascii=False, allow_nan=False)
+    Path(path).write_text(text + "\n", encoding="utf-8")
+
+
+def load_spectra_json(path):
+    """Load a collection JSON file or a legacy single-spectrum JSON file.
+
+    Always returns a list of ``Spectrum`` objects, including for a single
+    spectrum file. Collection files use the same version 1 format as the
+    napari plugin.
+
+    Example: ``references = load_spectra_json("references.json")``.
+    """
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if isinstance(payload, dict) and payload.get("format") == "lumic-spectrum":
+        return [Spectrum._from_json_payload(payload)]
+    if (not isinstance(payload, dict) or set(payload) != {"format", "version", "spectra"}
+            or payload["format"] != "lumic-spectra"
+            or type(payload["version"]) is not int or payload["version"] != 1
+            or not isinstance(payload["spectra"], list) or not payload["spectra"]):
+        raise ValueError("Expected a Lumic spectrum or version 1 spectra collection")
+    return [Spectrum._from_json_payload(component) for component in payload["spectra"]]
