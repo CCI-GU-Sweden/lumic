@@ -1,4 +1,5 @@
 site_name: Lumic
+site_url: https://cci-gu-sweden.github.io/lumic/
 site_description: Spectral unmixing for fluorescence microscopy
 hooks:
   - Python/ci/render_cos7_notebook.py
