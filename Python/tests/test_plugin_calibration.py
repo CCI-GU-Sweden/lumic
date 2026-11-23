@@ -4,9 +4,64 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 from napari.components import ViewerModel
+from napari._qt.qt_main_window import _instantiate_dock_widget
+from qtpy.QtWidgets import QApplication
 
 from lumic import SpectralImage
 from plugin.plugin import SpectralUnmixingWidget
+
+
+@pytest.mark.parametrize("through_plugin_loader", [False, True])
+def test_raw_layer_is_calibrated_before_insertion_and_matches_results(through_plugin_loader):
+    app = QApplication.instance() or QApplication([])
+    viewer = ViewerModel()
+    dock = SimpleNamespace(setVisible=lambda *a: None, close=lambda: None)
+    def add_dock(controls, **kwargs):
+        dock.controls = controls
+        return dock
+    object.__setattr__(viewer, "window", SimpleNamespace(add_dock_widget=add_dock))
+    widget = (_instantiate_dock_widget(SpectralUnmixingWidget, viewer)
+              if through_plugin_loader else SpectralUnmixingWidget(viewer))
+    inserted = []
+    def record(event):
+        layer = event.value
+        inserted.append((layer.name, layer.scale.copy(), tuple(str(u) for u in layer.units)))
+    viewer.layers.events.inserted.connect(record)
+    image = SpectralImage(np.arange(60).reshape(3, 4, 5), "CYX",
+                          pixel_sizes_um={"Y": .07066, "X": .07066})
+    try:
+        widget._apply_plane(image, image.to_rgb(), 0, 0)
+        name, scale, units = inserted[0]
+        assert name == "Raw spectral image"
+        np.testing.assert_array_equal(scale, [.07066, .07066])
+        assert units == ("micrometer", "micrometer")
+        assert widget._layer_is_in_viewer(widget.raw_layer)
+        raw = widget.raw_layer
+        widget._apply_plane(image, image.to_rgb(), 0, 0)
+        assert widget.raw_layer == raw
+        assert len(viewer.layers) == 2
+        # Test the real plane-loading path, not a raw layer made by the result helper.
+        results = [widget._image_layer(None, np.zeros((4, 5)), name)
+                   for name in ("distance", "abundance", "residual", "PC")]
+        results.append(widget._points_layer(None, np.array([[2, 3]]), "reference", "red", 5))
+        for layer in results:
+            assert widget._layer_is_in_viewer(layer)
+            assert layer.units == widget.raw_layer.units
+            np.testing.assert_array_equal(layer.scale, widget.raw_layer.scale)
+            np.testing.assert_array_equal(layer.data_to_world((2, 3)), widget.raw_layer.data_to_world((2, 3)))
+        reused = widget._image_layer(results[0], np.ones((4, 5)), "distance")
+        assert reused == results[0] and len(viewer.layers) == 7
+        viewer.layers.selection.active = widget.raw_layer
+        widget._update_channel_slider_state()
+        assert widget.channel_slider.isEnabled()
+        widget.reference_mode.setCurrentText("Manual")
+        widget._capture_manual_spectrum(viewer, SimpleNamespace(
+            type="mouse_press", position=widget.raw_layer.data_to_world((2, 3))))
+        assert widget.pending_manual_point == (2, 3)
+        np.testing.assert_array_equal(widget.pending_manual_spectrum, image.data[:, 2, 3])
+    finally:
+        widget.close()
+        app.processEvents()
 
 
 @pytest.mark.parametrize("sizes, scale, unit", [

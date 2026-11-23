@@ -6,25 +6,27 @@ import pytest
 from ome_types import from_xml
 import tifffile
 
-from lumic import SpectralImage
+from lumic import SpectralImage, Spectrum
 from lumic.io import load_image
 from plugin.plugin import SpectralUnmixingWidget
+from plugin.spectra_io import load_spectra_json
 
 
 def test_manual_reference_keeps_measured_intensity():
     spectrum = np.array([10., 20., 30.])
     noop = lambda *args, **kwargs: None
     widget = SimpleNamespace(is_busy=False, reference_mode=SimpleNamespace(currentText=lambda: 'Manual'),
+        initial_spectra=None,
         pending_manual_spectrum=spectrum, pending_manual_point=(1, 2), manual_spectra=[], manual_points=[],
         reference_points_layer=None, _points_layer=noop, _colors=noop, _plot_references=noop,
         components_input=SimpleNamespace(value=lambda: 2), manual_status_label=SimpleNamespace(setText=noop),
         viewer=SimpleNamespace(layers=SimpleNamespace(selection=SimpleNamespace(active=None))),
-        raw_layer=None, _restore_action_states=noop, _warn=lambda message: pytest.fail(message))
+        raw_layer=None, _restore_action_states=noop, _set_status=noop, _warn=lambda message: pytest.fail(message))
     SpectralUnmixingWidget.accept_manual_spectrum(widget)
     np.testing.assert_array_equal(widget.manual_spectra[0], spectrum)
 
 
-@pytest.mark.parametrize('mode', ['Manual', 'Automatic'])
+@pytest.mark.parametrize('mode', ['Manual', 'Automatic', 'Load JSON'])
 def test_plugin_fit_and_export_roundtrip(tmp_path, monkeypatch, mode):
     spectra = np.array([[1., 2., 1.], [3., 1., 2.]])
     coefficients = np.array([[1., 2.], [2., 0.], [0., 3.], [4., 1.]])
@@ -46,6 +48,8 @@ def test_plugin_fit_and_export_roundtrip(tmp_path, monkeypatch, mode):
         for item in items:
             item.visible = False
     widget = SimpleNamespace(is_busy=False, initial_spectra=spectra, image=image,
+        initial_spectrum_objects=[Spectrum(row, image.wavelengths_nm, name=f"Component {i + 1}")
+                                  for i, row in enumerate(spectra)], plane_position=(0, 0),
         image_path=Path("/tmp/source/input.tif"), viewer=SimpleNamespace(layers=viewer_layers),
         reference_mode=SimpleNamespace(currentText=lambda: mode), pool_indices=np.arange(4),
         pools_input=SimpleNamespace(value=lambda: 1), channel_slider=SimpleNamespace(value=lambda: 0),
@@ -68,6 +72,7 @@ def test_plugin_fit_and_export_roundtrip(tmp_path, monkeypatch, mode):
     assert maps.kind == 'abundance' and maps.axes == 'KYX'
     np.testing.assert_array_equal(layers[0].data, maps.data[0])
     np.testing.assert_array_equal(maps.unmixing['spectra'], widget.optimized_spectra)
+    np.testing.assert_array_equal([s.values for s in widget.optimized_spectrum_objects], maps.unmixing['spectra'])
     assert not np.allclose(widget.optimized_spectra.sum(axis=1), 1)
     if mode == 'Manual':
         np.testing.assert_array_equal(widget.optimized_spectra, spectra)
@@ -103,9 +108,9 @@ def test_plugin_fit_and_export_roundtrip(tmp_path, monkeypatch, mode):
 
     widget.wave = image.wavelengths_nm
     widget.optimized_spectra = np.zeros_like(widget.optimized_spectra)
-    directory_dialog_args = []
-    monkeypatch.setattr('plugin.plugin.QFileDialog.getExistingDirectory', lambda *a, **k: (directory_dialog_args.append(a) or str(tmp_path)))
+    json_path = tmp_path / 'spectra.json'
+    save_dialog_args.clear()
+    monkeypatch.setattr('plugin.plugin.QFileDialog.getSaveFileName', lambda *a, **k: (save_dialog_args.append(a) or str(json_path), ''))
     SpectralUnmixingWidget._export_reference_spectra(widget, 'optimized')
-    assert directory_dialog_args[0][2] == '/tmp/source'
-    csv = tmp_path / 'input_optimized_reference_spectra' / 'optimized_component_1.csv'
-    np.testing.assert_array_equal(np.loadtxt(csv, delimiter=',', skiprows=1)[:, 1], maps.unmixing['spectra'][0])
+    assert save_dialog_args[0][2] == '/tmp/source/input_optimized_spectra.json'
+    np.testing.assert_array_equal([s.values for s in load_spectra_json(json_path)], maps.unmixing['spectra'])

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "napari-lumic-cci"
-version = "0.1.0rc4"
+version = "0.1.0"
 description = "A napari interface for LUMIC spectral unmixing"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
@@ -12,13 +12,13 @@ license = "MIT"
 license-files = ["LICENSE"]
 authors = [{name = "Lumic contributors"}]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Framework :: napari",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Image Processing",
 ]
 dependencies = [
-    "lumic>=0.1.0rc1,<0.2",
+    "lumic>=0.1.0rc3,<0.2",
     "napari>=0.9",
     "numpy>=2.1",
     "matplotlib>=3.9",
