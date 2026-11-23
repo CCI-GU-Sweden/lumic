@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: >-
+  If you use Lumic in a scientific publication, please cite the specific
+  software release you used. The release's Zenodo record will provide the
+  version DOI when available.
+title: Lumic
+type: software
+url: https://github.com/CCI-GU-Sweden/lumic
+license: MIT
+authors:
+  - family-names: Camacho
+    given-names: Rafael
+  - family-names: Gupta
+    given-names: Ketan
+  - family-names: Vitale
+    given-names: Raffaele
+  - name: Lumic contributors
+  - name: Centre for Cellular Imaging contributors

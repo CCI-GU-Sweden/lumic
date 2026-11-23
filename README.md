@@ -195,6 +195,20 @@ discussions and insights that helped guide Lumic's development, and for sharing
 a MATLAB implementation that served as a basis for parts of the Lumic backend.
 That MATLAB implementation is not distributed in this repository.
 
+## Authors and contributions
+
+- **Rafael Camacho** leads the project and develops the backend.
+- **Ketan Gupta** develops the napari plugin.
+- **Raffaele Vitale** contributed scientific discussions, the MATLAB reference
+  implementation, and examples that informed the project.
+- **Lumic contributors** are recognized as they contribute to the project.
+- **Centre for Cellular Imaging contributors** support the project through
+  shared microscopy expertise, discussions, and laboratory input.
+
+See [CITATION.cff](CITATION.cff) for the software citation metadata. Package
+versions are released independently. The project version and Zenodo DOI will
+be added after a coordinated release is chosen and archived.
+
 ## License and data attribution
 
 Lumic code and documentation are distributed under the [MIT license](LICENSE).
