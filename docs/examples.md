@@ -15,7 +15,9 @@ python -m examples.spectral_image_workflow
 ```
 
 Open the notebooks from `Python/examples/notebooks/` in Jupyter and select
-the kernel for the same environment. Examples marked **COS-7 download** fetch the
+the kernel for the same environment. If you're new to Jupyter, see
+[Run your first notebook](backend/cos7-workflow.md#run-your-first-notebook).
+Examples marked **COS-7 download** fetch the
 public high-SNR image on first use (about 145 MB) and reuse the local copy
 afterward. Examples marked **live FPbase** need internet access and the
 `fpbase` extra. To install both extras from the repository root, use
