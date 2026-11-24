@@ -13,11 +13,11 @@ to each pixel and helps you inspect what the fitted model leaves unexplained.
 
 ## Install the published backend
 
-Install the backend release candidate from
+Install the backend from
 [PyPI](https://pypi.org/project/lumic/) in a Python 3.12 environment:
 
 ```bash
-python -m pip install "lumic==0.1.0rc4"
+python -m pip install lumic
 ```
 
 The [backend quickstart](Python/lumic/README.md#unmix-a-simulated-pixel-offline)

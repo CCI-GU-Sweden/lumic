@@ -25,7 +25,7 @@ MCR-ALS, and inspect the resulting abundance maps and reconstruction error.
    terminal with `lumic-notebooks` active.
 
     ```bash
-    python -m pip install "lumic[examples]==0.1.0rc4"
+    python -m pip install "lumic[examples]==0.1.0"
     jupyter lab
     ```
 
