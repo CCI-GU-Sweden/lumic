@@ -3,6 +3,7 @@
 [![Lumic backend version on PyPI](https://img.shields.io/pypi/v/lumic?label=Backend%20PyPI)](https://pypi.org/project/lumic/)
 [![Plugin version on PyPI](https://img.shields.io/pypi/v/napari-lumic-cci?label=Plugin%20PyPI)](https://pypi.org/project/napari-lumic-cci/)
 [![Docs](https://img.shields.io/badge/docs-online-blue)](https://cci-gu-sweden.github.io/lumic/)
+[![Zenodo DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24505171.svg)](https://doi.org/10.5281/zenodo.24505171)
 [![Python tests](https://github.com/CCI-GU-Sweden/lumic/actions/workflows/python-tests.yml/badge.svg?branch=main)](https://github.com/CCI-GU-Sweden/lumic/actions/workflows/python-tests.yml)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue)](environment.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
