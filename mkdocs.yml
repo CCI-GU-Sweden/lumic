@@ -1,6 +1,8 @@
 site_name: Lumic
 site_url: https://cci-gu-sweden.github.io/lumic/
 site_description: Spectral unmixing for fluorescence microscopy
+repo_url: https://github.com/CCI-GU-Sweden/lumic
+repo_name: Lumic on GitHub
 hooks:
   - Python/ci/render_cos7_notebook.py
 watch:
@@ -10,6 +12,17 @@ theme:
   name: material
   features:
     - content.code.copy
+extra:
+  social:
+    - icon: material/language-python
+      link: https://pypi.org/project/lumic/
+      name: Lumic backend on PyPI
+    - icon: material/puzzle-outline
+      link: https://pypi.org/project/napari-lumic-cci/
+      name: Napari plugin on PyPI
+    - icon: material/bug-outline
+      link: https://github.com/CCI-GU-Sweden/lumic/issues
+      name: Report an issue
 markdown_extensions:
   - attr_list
   - md_in_html
