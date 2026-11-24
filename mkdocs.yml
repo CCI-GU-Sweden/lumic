@@ -11,6 +11,7 @@ theme:
   features:
     - content.code.copy
 markdown_extensions:
+  - attr_list
   - md_in_html
   - pymdownx.highlight:
       pygments_lang_class: true
