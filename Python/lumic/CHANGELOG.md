@@ -1,6 +1,6 @@
 # Lumic backend changelog
 
-## Unreleased
+## 0.1.0rc4
 
 - Add `SpectrumCollection` for ordered component spectra on a shared sample
   axis, with optional detector bands and provenance for each component and the
@@ -11,6 +11,9 @@
 - Add a backend guide and offline example that prepare bundled FPbase spectra
   on the LSM 980 detector grid, save and reload the collection, and use it for
   unmixing.
+- Publish the backend API reference and link to the hosted guides from PyPI.
+- Expose `essential_spectral_pixels` with the corrected spelling. Existing
+  callers can still use `essential_spectral_pixles`.
 
 ## 0.1.0rc3
 

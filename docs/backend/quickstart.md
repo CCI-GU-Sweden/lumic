@@ -1,10 +1,9 @@
 # Backend quickstart
 
-Install the Lumic backend in a **Python 3.12** environment. This guide uses
-the published [`0.1.0rc2` prerelease](https://pypi.org/project/lumic/0.1.0rc2/).
+Install the Lumic backend release candidate in a **Python 3.12** environment.
 
 ```bash
-python -m pip install "lumic==0.1.0rc2"
+python -m pip install "lumic==0.1.0rc4"
 ```
 
 ## Unmix a simulated pixel

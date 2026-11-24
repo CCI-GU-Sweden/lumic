@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lumic"
-version = "0.1.0rc3"
+version = "0.1.0rc4"
 description = "Spectral unmixing tools for fluorescence microscopy"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
@@ -50,7 +50,10 @@ test = ["pytest"]
 all = ["lumic[visualization,fpbase,examples,test]"]
 
 [project.urls]
+Documentation = "https://cci-gu-sweden.github.io/lumic/"
 Repository = "https://github.com/CCI-GU-Sweden/lumic"
+Issues = "https://github.com/CCI-GU-Sweden/lumic/issues"
+Changelog = "https://github.com/CCI-GU-Sweden/lumic/blob/main/Python/lumic/CHANGELOG.md"
 
 [tool.setuptools]
 # Keep the existing import package and build project in the same directory.
