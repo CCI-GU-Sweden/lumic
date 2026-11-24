@@ -13,21 +13,19 @@ to each pixel and helps you inspect what the fitted model leaves unexplained.
 
 ## Install the published backend
 
-The Lumic backend is available as a prerelease. Install it from
-[PyPI](https://pypi.org/project/lumic/0.1.0rc3/) in a Python 3.12 environment:
+Install the backend release candidate from
+[PyPI](https://pypi.org/project/lumic/) in a Python 3.12 environment:
 
 ```bash
-python -m pip install "lumic==0.1.0rc3"
+python -m pip install "lumic==0.1.0rc4"
 ```
 
 The [backend quickstart](Python/lumic/README.md#unmix-a-simulated-pixel-offline)
 runs with the installed package and its bundled spectra. The full walkthrough
 below uses examples and sample data from the repository checkout.
 
-The [documentation source](docs/index.md) includes tutorials on loading
-images, estimating spectra, evaluating fits, and saving results. See the
-[local preview instructions](CONTRIBUTING.md#preview-the-documentation-locally)
-to browse the site.
+The [online documentation](https://cci-gu-sweden.github.io/lumic/) includes
+tutorials and a [backend API reference](https://cci-gu-sweden.github.io/lumic/backend/api-overview/).
 
 ## Install the published plugin
 
