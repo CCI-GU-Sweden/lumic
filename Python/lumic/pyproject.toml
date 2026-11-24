@@ -10,7 +10,12 @@ readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = "MIT"
 license-files = ["LICENSE"]
-authors = [{name = "Lumic contributors"}]
+authors = [{name = "Rafael Camacho"}]
+maintainers = [
+    {name = "Rafael Camacho"},
+    {name = "Ketan Gupta"},
+    {name = "Lumic contributors"},
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3.12",

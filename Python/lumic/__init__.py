@@ -4,7 +4,7 @@ import numpy as np
 from scipy import ndimage
 
 from .image import SpectralImage, UnfoldedImage, RGBRendering
-from .spectra import Spectrum
+from .spectra import Spectrum, SpectrumCollection
 from .unmixing import (
     MCRALSDiagnostics,
     lof,

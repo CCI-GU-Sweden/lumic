@@ -1,5 +1,17 @@
 # Lumic backend changelog
 
+## Unreleased
+
+- Add `SpectrumCollection` for ordered component spectra on a shared sample
+  axis, with optional detector bands and provenance for each component and the
+  collection as a whole.
+- Save and load collections as versioned JSON while preserving sample order
+  and numeric dtypes. Store the shared wavelength coordinates and detector
+  bands once per file.
+- Add a backend guide and offline example that prepare bundled FPbase spectra
+  on the LSM 980 detector grid, save and reload the collection, and use it for
+  unmixing.
+
 ## 0.1.0rc3
 
 - Verify release packaging and PyPI publishing from the new Lumic repository.
