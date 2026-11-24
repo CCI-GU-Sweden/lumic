@@ -19,6 +19,7 @@ nav:
       - Quickstart: backend/quickstart.md
       - Experimental data:
           - Load spectral images: backend/load-images.md
+          - Load and prepare spectra: backend/load-spectra.md
           - Unmix a real experimental image (COS-7): backend/cos7-workflow.md
           - Evaluate experimental data: backend/evaluate-results.md
       - Simulated data:

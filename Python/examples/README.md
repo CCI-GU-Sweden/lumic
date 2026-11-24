@@ -33,10 +33,15 @@ include an optional bundled Z stack to demonstrate plane selection.
 | Preview a spectral image in RGB | [render_spectral_rgb.py](render_spectral_rgb.py) | Public COS-7 CZI, with an optional bundled Z stack |
 | Unmix an experimental image | [minimal_example](notebooks/minimal_example.ipynb) | Public high-SNR COS-7 CZI, downloaded on first run and cached locally |
 | Import a ZEN reference spectrum | [xmlZEN_load](notebooks/xmlZEN_load.ipynb) | Bundled ZEN XML export |
+| Save and reload detector-sampled references for unmixing | [spectrum_collection_workflow.py](spectrum_collection_workflow.py) | Offline FPbase emission curves bundled with Lumic |
 | Discover distinct spectra with a convex hull | [convexhull_minimal_example](notebooks/convexhull_minimal_example.ipynb) | Synthetic spectra |
 | Simulate, unmix, and export a ternary image | [spectral_image_workflow.py](spectral_image_workflow.py), [export_spectral_ome_tiff.py](export_spectral_ome_tiff.py) | Offline FPbase emission curves bundled with Lumic |
 | Explore spatial mixing and blur | [visualize_spatial_scene.py](visualize_spatial_scene.py), [visualize_overlapping_circles.py](visualize_overlapping_circles.py) | Synthetic scenes using offline spectra |
 | Inspect noise and spectral uniqueness | [visualize_noise_levels.py](visualize_noise_levels.py), [visualize_poisson_noise_levels.py](visualize_poisson_noise_levels.py), [visualize_spectral_uniqueness.py](visualize_spectral_uniqueness.py) | Simulated detector images using offline spectra |
+
+From `Python/`, run `python -m examples.spectrum_collection_workflow spectra.json`
+to write an inspectable reference collection and print the fitted abundances
+for two synthetic mixtures.
 
 For format-specific reading, see [load_spectral_czi.py](load_spectral_czi.py)
 or [load_spectral_ome_tiff.py](load_spectral_ome_tiff.py), which creates a

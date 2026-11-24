@@ -12,13 +12,11 @@ import numpy as np
 from matplotlib.figure import Figure
 
 from lumic import (
-    Spectrum,
+    SpectrumCollection,
     essential_spectral_pixles,
-    load_spectra_json,
     mcr_als,
     normalize_components,
     positive_least_squares,
-    save_spectra_json,
     unique_profiles,
 )
 from lumic.evaluation import concentration_error_maps, evaluate_factors
@@ -281,28 +279,31 @@ def compare_to_simulation(blind_result, spatial, spectral_result, detector,
     # names make it clear that the solver did not identify fluorophores.
     output_dir = DEFAULT_SPECTRA_OUTPUT
     output_dir.mkdir(parents=True, exist_ok=True)
-    initial_objects = [
-        Spectrum(values, detector.channel_centers, name=f"Initial component {index + 1}",
-                 provenance={"method": "convex hull and unique profiles",
-                             "normalization": "L1", "source": "simulated detector pixels"})
-        for index, values in enumerate(blind_result["initial_spectra"])
-    ]
-    fitted_objects = [
-        Spectrum(values, detector.channel_centers, name=f"Blind component {index + 1}",
-                 provenance={"method": "MCR-ALS", "status": blind_result["status"],
-                             "source": "simulated detector pixels"})
-        for index, values in enumerate(blind_result["fitted_spectra"])
-    ]
-    true_objects = [
-        Spectrum(values, detector.channel_centers, name=name,
-                 provenance={"source": "offline FPbase simulation truth"})
-        for name, values in zip(FLUOROPHORES, true_spectra)
-    ]
-    save_spectra_json(initial_objects, output_dir / "initial-blind-spectra.json")
-    save_spectra_json(fitted_objects, output_dir / "fitted-blind-spectra.json")
-    save_spectra_json(true_objects, output_dir / "simulation-truth-spectra.json")
-    # Demonstrate the public loader and retain objects for downstream plotting.
-    loaded_fitted_spectra = load_spectra_json(output_dir / "fitted-blind-spectra.json")
+    edges = detector.bin_edges
+    axes = {
+        "wavelengths_nm": detector.channel_centers,
+        "detection_bands_nm": np.column_stack((edges[:-1], edges[1:])),
+    }
+    initial_spectra = blind_result["initial_spectra"]
+    fitted_spectra = blind_result["fitted_spectra"]
+    SpectrumCollection(
+        initial_spectra, **axes,
+        names=[f"Initial component {index + 1}" for index in range(len(initial_spectra))],
+        provenance={"method": "convex hull and unique profiles", "normalization": "L1",
+                    "source": "simulated detector pixels"},
+    ).save_json(output_dir / "initial-blind-spectra.json")
+    fitted_path = output_dir / "fitted-blind-spectra.json"
+    SpectrumCollection(
+        fitted_spectra, **axes,
+        names=[f"Blind component {index + 1}" for index in range(len(fitted_spectra))],
+        provenance={"method": "MCR-ALS", "status": blind_result["status"],
+                    "source": "simulated detector pixels"},
+    ).save_json(fitted_path)
+    SpectrumCollection(
+        true_spectra, **axes, names=FLUOROPHORES,
+        provenance={"source": "offline FPbase simulation truth"},
+    ).save_json(output_dir / "simulation-truth-spectra.json")
+    loaded_fitted_spectra = SpectrumCollection.load_json(fitted_path)
     print(f"Saved and reloaded {len(loaded_fitted_spectra)} blind spectra in {output_dir}")
 
     # Evaluation aligns component order only now, after blind fitting.

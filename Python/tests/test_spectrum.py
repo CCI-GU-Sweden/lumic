@@ -3,7 +3,7 @@ import json
 import numpy as np
 import pytest
 
-from lumic import Spectrum, load_spectra_json, save_spectra_json
+from lumic import Spectrum
 
 
 def test_spectrum_preserves_values_and_wavelength_order():
@@ -152,76 +152,3 @@ def test_spectrum_json_rejects_extended_precision(tmp_path):
         pytest.skip("No extended precision dtype on this platform")
     with pytest.raises(ValueError, match="64 bits"):
         Spectrum(np.array([1], dtype=np.longdouble)).save_json(tmp_path / "extended.json")
-
-
-def test_spectrum_collection_json_round_trip(tmp_path):
-    spectra = [
-        Spectrum(np.array([1, 2, 3], dtype=np.float32), [450, 500, 550],
-                 name="EGFP", provenance={"source": "simulation"}),
-        Spectrum(np.array([3, 2, 1], dtype=np.float64), [450, 500, 550],
-                 name="mCherry", provenance={"source": "FPbase"}),
-    ]
-    path = tmp_path / "references.json"
-
-    save_spectra_json(spectra, path)
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    assert payload["format"] == "lumic-spectra"
-    assert payload["version"] == 1
-    assert len(payload["spectra"]) == 2
-    restored = load_spectra_json(path)
-
-    assert len(restored) == 2
-    for expected, actual in zip(spectra, restored):
-        np.testing.assert_array_equal(actual.values, expected.values)
-        np.testing.assert_array_equal(actual.wavelengths_nm, expected.wavelengths_nm)
-        assert actual.name == expected.name
-        assert actual.provenance == expected.provenance
-
-
-def test_spectrum_collection_loader_accepts_single_spectrum_json(tmp_path):
-    path = tmp_path / "single.json"
-    Spectrum([1, 2], name="reference").save_json(path)
-
-    restored = load_spectra_json(path)
-
-    assert len(restored) == 1
-    assert restored[0].name == "reference"
-
-
-@pytest.mark.parametrize("payload", [
-    {"format": "lumic-spectra", "version": 1, "spectra": []},
-    {"format": "lumic-spectra", "version": 2, "spectra": []},
-    {"format": "lumic-spectra", "version": 1, "spectra": [{"format": "other"}]},
-])
-def test_spectrum_collection_loader_rejects_invalid_payload(tmp_path, payload):
-    path = tmp_path / "invalid-collection.json"
-    path.write_text(json.dumps(payload), encoding="utf-8")
-
-    with pytest.raises(ValueError):
-        load_spectra_json(path)
-
-
-def test_spectrum_collection_save_rejects_empty_or_invalid_input_before_overwrite(tmp_path):
-    path = tmp_path / "existing.json"
-    path.write_text("existing content", encoding="utf-8")
-
-    with pytest.raises(ValueError, match="at least one"):
-        save_spectra_json([], path)
-    with pytest.raises(ValueError, match="at least one"):
-        save_spectra_json(None, path)
-    with pytest.raises(ValueError, match="Spectrum object"):
-        save_spectra_json([Spectrum([1]), object()], path)
-
-    assert path.read_text(encoding="utf-8") == "existing content"
-
-
-def test_spectrum_collection_save_rejects_mutated_spectrum_before_overwrite(tmp_path):
-    spectrum = Spectrum([1.0])
-    spectrum.values[0] = np.nan
-    path = tmp_path / "existing.json"
-    path.write_text("existing content", encoding="utf-8")
-
-    with pytest.raises(ValueError, match="finite"):
-        save_spectra_json([spectrum], path)
-
-    assert path.read_text(encoding="utf-8") == "existing content"

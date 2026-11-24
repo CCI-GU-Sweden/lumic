@@ -93,46 +93,42 @@ imwrite(output / "preview-rgb.tif", preview.data, photometric="rgb")
 
 ## Save and reuse the optimized spectra
 
-Use one `Spectrum` object per component to keep its name, detector wavelengths
-and processing history together. Save the related spectra in a single JSON
-collection. The numerical APIs still receive a NumPy matrix, so convert the
-objects to an array only where fitting starts.
+Use a `SpectrumCollection` to save the component names, shared detector
+coordinates, and processing history with the fitted spectra.
 
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
-from lumic import Spectrum, load_spectra_json, save_spectra_json
+from lumic import SpectrumCollection
 
-fitted_spectrum_objects = [
-    Spectrum(
-        values=refined_spectra[index],
-        wavelengths_nm=unfolded.wavelengths_nm,
-        name=component_names[index],
-        provenance={"method": "MCR-ALS", "normalization": "L1"},
-    )
-    for index in range(len(component_names))
-]
+fitted_spectra = SpectrumCollection(
+    refined_spectra,
+    wavelengths_nm=unfolded.wavelengths_nm,
+    detection_bands_nm=unfolded.detection_bands_nm,
+    names=component_names,
+    provenance={"method": "MCR-ALS", "normalization": "L1"},
+)
 
 collection_path = output / "optimized-spectra.json"
-save_spectra_json(fitted_spectrum_objects, collection_path)
-reloaded_spectra = load_spectra_json(collection_path)
+fitted_spectra.save_json(collection_path)
+reloaded_spectra = SpectrumCollection.load_json(collection_path)
 
-# Convert to components × channels for the solver.
-spectra_matrix = np.stack([spectrum.values for spectrum in reloaded_spectra])
+# Use the components × channels matrix once the detector grid matches.
+spectra_matrix = reloaded_spectra.values
 ```
 
 Plot the values against their attached wavelength labels:
 
 ```python
-for spectrum in reloaded_spectra:
-    plt.plot(spectrum.wavelengths_nm, spectrum.values, label=spectrum.name)
+for name, values in zip(reloaded_spectra.names, reloaded_spectra.values):
+    plt.plot(reloaded_spectra.wavelengths_nm, values, label=name)
 plt.xlabel("Wavelength (nm)")
 plt.ylabel("Normalized intensity")
 plt.legend()
 ```
 
-The collection stores each component's values, wavelength labels, name and
-provenance together in one file. `Spectrum.save_json()` and
+The collection stores the wavelength axis and detector bands once alongside
+the component matrix. `Spectrum.save_json()` and
 `Spectrum.load_json()` remain available for individual references.
 
 The CSV below is a compact alternative when you only need a table for plotting

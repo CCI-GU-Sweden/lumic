@@ -6,10 +6,11 @@ Then estimate starting spectra from the convex hull, refine them with
 MCR-ALS, and inspect the resulting abundance maps and reconstruction error.
 
 [Download the notebook](minimal_example.ipynb) and open it in Jupyter with
-Python 3.12. Install Lumic and the notebook dependencies in that environment.
+Python 3.12. Install Lumic and the notebook dependencies from the root of
+your Lumic checkout. The notebook uses `SpectrumCollection`.
 
 ```bash
-python -m pip install "lumic[examples]==0.1.0rc2"
+python -m pip install -e "./Python/lumic[examples]"
 ```
 
 Run the notebook from top to bottom in a folder where you want the output
