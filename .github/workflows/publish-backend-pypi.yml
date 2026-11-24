@@ -1,4 +1,4 @@
-name: Publish backend candidate to PyPI
+name: Publish backend release to PyPI
 
 on:
   workflow_dispatch:
@@ -25,8 +25,8 @@ jobs:
       actions: read
       id-token: write
     steps:
-      - name: Verify candidate build
-        id: candidate
+      - name: Verify release build
+        id: release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_RUN_ID: ${{ inputs.release_run_id }}
@@ -41,8 +41,8 @@ jobs:
               and .event == "push" and .status == "completed" and .conclusion == "success")
             | .head_branch
           ')
-          if [[ ! "$tag" =~ ^lumic-v[0-9]+\.[0-9]+\.[0-9]+rc[0-9]+$ ]]; then
-            echo "Select a successful backend release build for a lumic-vX.Y.ZrcN tag." >&2
+          if [[ ! "$tag" =~ ^lumic-v[0-9]+\.[0-9]+\.[0-9]+(rc[0-9]+)?$ ]]; then
+            echo "Select a successful backend release build for a lumic-vX.Y.Z or lumic-vX.Y.ZrcN tag." >&2
             exit 1
           fi
           {
@@ -55,12 +55,12 @@ jobs:
         with:
           github-token: ${{ github.token }}
           run-id: ${{ inputs.release_run_id }}
-          name: ${{ steps.candidate.outputs.artifact_name }}
+          name: ${{ steps.release.outputs.artifact_name }}
           path: dist/
 
-      - name: Verify the upload contains only the candidate wheel and source archive
+      - name: Verify the upload contains only the release wheel and source archive
         env:
-          VERSION: ${{ steps.candidate.outputs.version }}
+          VERSION: ${{ steps.release.outputs.version }}
         run: |
           shopt -s dotglob nullglob
           files=(dist/*)

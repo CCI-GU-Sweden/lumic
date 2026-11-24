@@ -1,5 +1,15 @@
 # Lumic backend changelog
 
+## 0.1.0
+
+First stable backend release. It includes CZI and OME-TIFF I/O, fixed-reference
+unmixing and MCR-ALS, reusable `SpectrumCollection` references, offline
+simulation, and residual and recovery diagnostics.
+
+- Publish the stable package with the backend API reference.
+- Make the COS-7 notebook downloadable and add a first-run guide for Miniforge
+  and JupyterLab.
+
 ## 0.1.0rc4
 
 - Add `SpectrumCollection` for ordered component spectra on a shared sample

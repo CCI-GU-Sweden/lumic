@@ -7,8 +7,8 @@ OME-XML is outside the OME-TIFF reader's scope.
 
 ## Download the public COS-7 example
 
-Use `lumic.data.download_cos7_data()` to fetch the COS-7 acquisitions with
-Lumic `0.1.0rc2` or later. See the [backend quickstart](quickstart.md) for
+Use `lumic.data.download_cos7_data()` to fetch the COS-7 acquisitions.
+See the [backend quickstart](quickstart.md) for
 installation and the [COS-7 notebook](cos7-workflow.md) for a full unmixing run.
 
 By default the function downloads only the high-SNR mixed CZI (about

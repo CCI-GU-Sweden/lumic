@@ -12,14 +12,14 @@ graphical interface.
 
 ## Install
 
-In a Python 3.12 environment, install this release candidate:
+Install Lumic in a Python 3.12 environment.
 
 ```sh
-python -m pip install "lumic==0.1.0rc4"
+python -m pip install lumic
 ```
 
 For Jupyter notebooks and plotting tools, install
-`"lumic[examples]==0.1.0rc4"`. Use the `visualization` extra for spectral
+`"lumic[examples]"`. Use the `visualization` extra for spectral
 uniqueness RGB rendering or the `fpbase` extra to retrieve spectra online.
 Bundled FPbase curves are available in the default install. See the
 [example setup guide](https://cci-gu-sweden.github.io/lumic/examples/) for
