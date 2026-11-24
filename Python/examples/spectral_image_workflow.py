@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-from lumic import SpectralImage, positive_least_squares
+from lumic import SpectralImage, SpectrumCollection, positive_least_squares
 from lumic.io import load_image
 from lumic.evaluation import reconstruction_error_maps
 from lumic.simulation import (
@@ -126,7 +126,7 @@ save_workflow_figure(
 print(f"Saved figure to {OUTPUT_PATH}")
 
 
-# 9. EXPORT AND RELOAD ALL THREE IMAGE KINDS
+# 9. EXPORT AND RELOAD THE IMAGES AND REFERENCE SPECTRA
 # On disk, OME uses C for both detector channels and component maps. Lumic's
 # annotation restores K for maps and keeps their optional component spectra.
 EXPORT_DIR.mkdir(parents=True, exist_ok=True)
@@ -136,6 +136,13 @@ reconstructed_path = reconstruction.save_ome_tiff(
     EXPORT_DIR / "reconstructed.ome.tif", compression=COMPRESSION, overwrite=True)
 abundance_path = maps.save_ome_tiff(
     EXPORT_DIR / "abundances.ome.tif", compression=COMPRESSION, overwrite=True)
+references_path = EXPORT_DIR / "reference-spectra.json"
+SpectrumCollection(
+    spectra, image.wavelengths_nm, detection_bands_nm=image.detection_bands_nm,
+    names=FLUOROPHORES,
+    provenance={"source": "offline FPbase", "detector_profile": detector.name,
+                "normalization": "L1"},
+).save_json(references_path)
 
 measured_again = load_image(measured_path, t=None, z=None)
 reconstructed_again = load_image(reconstructed_path, t=None, z=None)
@@ -145,6 +152,15 @@ for original, reloaded in ((image, measured_again),
     assert reloaded.kind == original.kind and reloaded.axes == original.axes
     np.testing.assert_array_equal(reloaded.data, original.data)
     print(f"Reloaded {reloaded.kind}: {reloaded.axes}, {reloaded.data.shape}")
+
+# For a new image, load the references and check its channel grid in the same
+# order before passing references.values to positive_least_squares with do_norm=False.
+references = SpectrumCollection.load_json(references_path)
+np.testing.assert_array_equal(references.wavelengths_nm, measured_again.wavelengths_nm)
+np.testing.assert_array_equal(references.detection_bands_nm, measured_again.detection_bands_nm)
+np.testing.assert_array_equal(references.values, spectra)
+assert references.names == FLUOROPHORES
+print(f"Saved and reloaded reference spectra at {references_path}")
 
 # Only the reloaded maps and saved basis are needed for this prediction.
 # It reproduces the fitted signal, not the measured image's random noise.
