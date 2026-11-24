@@ -418,18 +418,29 @@ class UnfoldedImage:
         detector wavelengths/bands are never attached directly to components.
         Optional component_names follow matrix column order, without matching.
 
-        Supply spectra (K×C) to save a reconstructable factor pair. These MUST
-        be the effective spectra used for these coefficients, including any
-        normalization performed during fitting. No rescaling is applied here.
-        Detector coordinates/names are copied from the unfolded source into
-        the optional unmixing metadata block. Spectra dtype/values are retained.
-        normalization/abundance_units are optional descriptive strings, not
-        constraints or inferred physical calibration. They require spectra.
+        To reconstruct the fitted detector signal later, pass the same
+        component spectra (K × C) used to fit the abundances, on the same
+        scale. The image stores those spectra and the source detector
+        metadata without rescaling the values.
 
-        Example: maps = unfolded.fold_abundances(C, spectra=S,
-                    component_names=["A", "B"], normalization="L1")
-        Then maps.save_ome_tiff(path) and load_image(path).reconstruct().
-        Maps without spectra can be saved/loaded but cannot reconstruct alone.
+        When you supply spectra, you can also use `normalization` and
+        `abundance_units` to describe their scale and the units of the
+        fitted abundances. These labels do not change the values.
+
+        To save abundances fitted with L1-normalized reference spectra:
+
+        ```python
+        maps = unfolded.fold_abundances(
+            abundances,
+            spectra=reference_spectra,
+            component_names=["A", "B"],
+            normalization="L1",
+        )
+        maps.save_ome_tiff("abundances.ome.tif")
+        ```
+
+        After loading the saved image, call `reconstruct()` to recover the
+        fitted detector signal. Reconstruction requires the stored spectra.
         """
         unmixing = None
         if spectra is None:

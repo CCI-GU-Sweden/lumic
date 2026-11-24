@@ -102,9 +102,9 @@ def select_analysis_pixels(image, *, median_quantile=None, spectral_axis=0):
     >>> retained.median_threshold
     2.0
 
-    For a channel-first image, get retained spectra explicitly with
-    ``unfold_spec_data(image)[retained.indices]``. No retained-data copy is stored
-    inside the result.
+    Use ``unfolded.data[retained.indices]`` when ``unfolded`` was created from
+    the same image with ``SpectralImage.unfold()``. The result stores the
+    selection without copying the selected spectra.
     """
     data = np.asarray(image)
     if (data.ndim != 3 or any(size == 0 for size in data.shape)
