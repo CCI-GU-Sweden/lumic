@@ -19,6 +19,7 @@ from .uniqueness import (
     SpectralUniquenessResult,
     spectral_uniqueness_map,
     spectral_uniqueness_rgb,
+    essential_spectral_pixels,
     essential_spectral_pixles,
     unique_profiles,
     wmat,

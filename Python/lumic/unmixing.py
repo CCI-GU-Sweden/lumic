@@ -44,40 +44,41 @@ def _solve_batch_with_bvls(components, mixed_batch, first_observation):
 
 
 def positive_least_squares(mixed_data, components, do_norm = False, batch_size = 1000, verbose=False, *, solver="nnls"):
-    """Least square implementation of unmixing with non-negative constrain and L1 or L2 norm
-
-    This funtion measures the abundace of components (single spect) in the query mixed data (spectral mix)
-    mixed_data is requested first to make pooling easier later on.
+    """Fit nonnegative abundances with fixed component spectra.
 
     Parameters
     ----------
-    mixed_data (numpy 2D array): Query data of mixed components. rows are observations, cols are spectral channels.
-                This dataset is "flattened" meaning that each row belongs to a pixel in the image.
-    components (numpy 2D array): Array containing the pure components to be used for unmixing of mixed_data and
-                thus calculate the abundance. rows are component indexes and cols are spectral channels
-    do_norm (bool False, or string "L1" "L2"): normalization strategy, bool False means no normalization
-    batch_size (integer): number of oberveations to be unmixed "at the same time". For large datasets we cannot send all the
-                data at once to sklearn linear regresion.
-    verbose (bool): if true then we use tqdm to print out a progress bar.
-    solver (str): "nnls" retains the original per-observation solver.
-                "auto" uses batch solving for up to six well-conditioned
-                components, and the original NNLS/BVLS path otherwise.
-                Fixed-component decompositions are reused across batches
-                within this call. Later calls prepare their own matrices;
-                changing spectra in ALS cannot reuse a stale preparation.
-                Single-batch calls stream subsets to limit memory use.
-
-    If batched NNLS does not converge, the observations in that batch are retried
-    individually with the BVLS solver. Observations that still do not converge
-    are returned as NaN and identified by a RuntimeWarning with their flattened
-    observation indices.
+    mixed_data : numpy.ndarray
+        Observation matrix of shape (N, C), with one row per pixel or
+        other observation and one column per detector channel.
+    components : numpy.ndarray
+        Reference spectra of shape (K, C), with one row per component.
+        The detector channels must match the observations in count and order.
+    do_norm : {False, "L1", "L2"}, optional
+        False uses the reference rows at their supplied scale. "L1" or "L2"
+        normalizes each nonzero reference row before fitting. The returned
+        abundances correspond to the scale used in the fit. Use nonzero
+        references when requesting normalization.
+    batch_size : int, optional
+        Maximum number of observations processed in a batch, default 1000.
+    verbose : bool, optional
+        Show a progress bar when True.
+    solver : {"nnls", "auto"}, optional
+        "nnls" uses the standard nonnegative least squares solver. "auto"
+        tries a batched solver for up to six well-conditioned components
+        and falls back to the standard path as needed.
 
     Returns
     -------
-    abundance (numpy 2D array): abuundance of each componen for each observation in the mixed_data. The diffing
-                is done with non-negative constrains. rows are observations (same as mixed data), cols are
-                components (same as rows in components)
+    abundance : numpy.ndarray
+        Shape (N, K), ordered like the input observations and component rows.
 
+    Notes
+    -----
+    When NNLS does not converge, the observations in that batch are retried
+    individually with bounded variable least squares (BVLS). Rows that still
+    fail contain NaN. A RuntimeWarning reports the fallback and identifies
+    any unresolved observation indices.
     """
     if solver not in ("nnls", "auto"):
         raise ValueError("solver must be 'nnls' or 'auto'")
@@ -236,7 +237,6 @@ def mcr_als(mixData, in_estimates, nIter, normL, *, tol_percent=None,
 
     Returns
     -------
-
     out_C : numpy.ndarray
         Fitted concentrations, with pixels in rows and components in columns.
     out_S : numpy.ndarray

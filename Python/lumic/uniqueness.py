@@ -56,7 +56,7 @@ def spectral_uniqueness_map(image, *, npc=3, spectral_axis=0,
                             random_state=0):
     """Score distance from the center of the convex-hull spectral space.
 
-    The mapping is the same as ``essential_spectral_pixles``: fit an
+    The mapping is the same as ``essential_spectral_pixels``: fit an
     uncentered TruncatedSVD to pixel spectra, divide each projected row by
     its first coordinate, and retain coordinates 2 through npc. The score
     is Euclidean distance from the mean point in that space. Computing a
@@ -241,31 +241,31 @@ def spectral_uniqueness_rgb(result, *, max_distance=None):
 
 
 # convex hull data reduction
-def essential_spectral_pixles(mixed_data, npc=3):
-    """gets most unique pixels from a spectra dtaset
-    estimate_important_spec
-
-    This funtion uses a SVD representation of the mixed data to identify the most unique/important
-    observations/spectra in a set. This is done via a convex hull calculation. You can think of this
-    as a dimentionality reduction
+def essential_spectral_pixels(mixed_data, npc=3):
+    """Select candidate pixel spectra at the extremes of an SVD projection.
 
     Parameters
     ----------
-    mixed_data (numpy 2D array): Array of mixed components containing the list of observed spectral pixels:
-                 rows are observations, cols are spectral channels. This dataset is "flattened" meaning
-                 that each row belongs to a pixel in the image.
-    npc (integer): number of principal components to use for SVD decomposition
+    mixed_data : numpy.ndarray
+        Spectral observations of shape (N, C), with pixels in rows and
+        detector channels in columns. Each row must have a usable first
+        SVD coordinate.
+    npc : int, optional
+        Number of SVD components, default 3. Dividing the remaining
+        coordinates by the first leaves a projection of dimension npc - 1.
 
     Returns
     -------
-    important_spec (numpy 2D array): Array of most unique spectra in the mixed data. rows are observations
-                (generally much less than in mixed_data), cols are spectral channels (same as in mixed_data).
-    hull.vertices (vector of integers): index of observations in mixed_data that were identified by the
-                convex hull method
+    candidates : numpy.ndarray
+        Original spectra of shape (number of candidates, C). In one
+        projected dimension, the candidates are the two endpoints.
+    indices : numpy.ndarray
+        Row indices into mixed_data, in the same order as candidates.
 
-    See Also
-    --------
-    article : https://doi.org/10.1021/acs.analchem.9b02890
+    Notes
+    -----
+    Candidate rows are useful starting points for blind unmixing. Hull
+    membership does not establish that a spectrum comes from one component.
     """
 
     coordinates, _, valid = _project_spectral_pixels(mixed_data, npc)
@@ -290,28 +290,34 @@ def essential_spectral_pixles(mixed_data, npc=3):
     important_spec = mixed_data[hull_vert,:]
     return important_spec, hull_vert
 
+
+# Preserve the original spelling for existing callers, including the napari plugin.
+essential_spectral_pixles = essential_spectral_pixels
+
+
 ## detection of most unique spectra
 def unique_profiles(d, nr, f):
-    """ unique profiles
-
-    if d(nspectra,nwave) imp gives purest nwave => sp are conc. profiles (nr,nspectra)
-    if d(nwave,nspectra) imp gives purest nspectra => sp are spectra profiles (nr,nwave)
+    """Select distinct profiles from the columns of a data matrix.
 
     Parameters
     ----------
-    d : numpySrray
-        data matrix
+    d : numpy.ndarray
+        Matrix with one candidate profile per column. To select spectra,
+        pass the transpose of the candidates returned by
+        `essential_spectral_pixels()`, so rows are detector channels and
+        columns are candidate spectra.
     nr : int
-        (rank) number of pure components to search
+        Number of profiles to select.
     f : float
-        f percent of noise allowed respect maximum of the average spectrum given in % (i.e. 1% or 0.1%))
+        Noise offset as a percentage of the largest column mean. For
+        example, f=1.0 adds an offset of 1 percent of that mean.
 
     Returns
     -------
-    sp : numpyArray
-        most unique profiles
-    imp : numpyArray
-        indexes of purest variables
+    profiles : numpy.ndarray
+        Selected profiles as rows, with shape (nr, number of input rows).
+    indices : numpy.ndarray
+        Selected column indices into d, in the same order as profiles.
     """
 
 
