@@ -188,6 +188,24 @@ Plugin tests require the plugin dependencies and a Qt binding; see the
 `main` and pushes to `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the
 contribution workflow, environment details and GitHub check settings.
 
+## Funding
+
+The development of Lumic has been supported by the Swedish Foundation for
+Strategic Research (SSF) through two consecutive Research Infrastructure
+Fellows (RIF) grants at the Centre for Cellular Imaging (CCI), University of
+Gothenburg:
+
+- **RIF-1 ([RIF14-0079](https://strategiska.se/forskning/genomford-forskning/research-infrastructure-fellows-2014/projekt/7185/)):**
+  Research Infrastructure for Advanced Cellular Microscopy — Principal
+  Investigator: Julia Fernandez-Rodriguez.
+- **RIF-2 ([RIF21-0043](https://strategiska.se/en/research/ongoing-research/research-infrastructure-fellows-2/project/12138/)):**
+  Smart Microscopy and Machine Learning for Image Acquisition — Principal
+  Investigator: Rafael Camacho.
+
+We gratefully acknowledge SSF's support through both projects in enabling the
+development of open-source software and advanced bioimage analysis capabilities
+at CCI.
+
 ## Acknowledgements
 
 We thank **Raffaele Vitale (University of Lille)** for valuable scientific
@@ -195,19 +213,21 @@ discussions and insights that helped guide Lumic's development, and for sharing
 a MATLAB implementation that served as a basis for parts of the Lumic backend.
 That MATLAB implementation is not distributed in this repository.
 
-## Authors and contributions
+## Contributors in alphabetic order
 
-- **Rafael Camacho** leads the project and develops the backend.
-- **Ketan Gupta** develops the napari plugin.
-- **Raffaele Vitale** contributed scientific discussions, the MATLAB reference
-  implementation, and examples that informed the project.
-- **Lumic contributors** are recognized as they contribute to the project.
-- **Centre for Cellular Imaging contributors** support the project through
-  shared microscopy expertise, discussions, and laboratory input.
+- **[Bosio, Noemi](https://orcid.org/0000-0001-6294-4152)**
+- **[Camacho, Rafael](https://orcid.org/0000-0003-2325-6407)**
+- **[Fernandez-Rodriguez, Julia](https://orcid.org/0000-0003-4522-0966)**
+- **[Gupta, Ketan](https://orcid.org/0009-0000-9875-7324)**
+- **[Leclerc, Simon](https://orcid.org/0000-0003-1611-7572)**
+- **[Vitale, Raffaele](https://orcid.org/0000-0002-7497-1673)**
 
-See [CITATION.cff](CITATION.cff) for the software citation metadata. Package
-versions are released independently. The project version and Zenodo DOI will
-be added after a coordinated release is chosen and archived.
+Contributions to Lumic include experiments, scientific discussions, microscopy
+expertise, and software development, and are not limited to repository commits.
+We also thank current and past Centre for Cellular Imaging colleagues for their
+shared expertise, discussions, and laboratory input.
+
+For software citation details, see the [Lumic record on Zenodo](https://doi.org/10.5281/zenodo.24505171).
 
 ## License and data attribution
 
