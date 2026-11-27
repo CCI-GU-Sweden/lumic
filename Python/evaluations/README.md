@@ -1,5 +1,44 @@
 # Data-driven recovery evaluation
 
+## Convex hull dimensions with three fluorophores
+
+Run `python -m evaluations.evaluate_hull_fluorophores` from `Python/` to examine
+how increasing `npc` affects hull selection for 150 mixtures of offline
+FPbase EBFP2, EGFP, and mCherry spectra, sampled by Lumic's approximate
+`980_32ch` detector. The experiment compares noiseless data with the same
+mixtures plus independent Gaussian noise (standard deviation 0.001 times the
+maximum noiseless channel value, clipped at zero). It uses a fixed seed.
+
+Each hull runs in a separate process, with an eight-second limit including
+startup. Use `--timeout` to change the limit and `--output-dir` to choose a
+destination. `summary.md` and `results.csv` record outcomes and vertex counts;
+the run manifest records versions and settings. Timeouts depend on hardware
+and do not mean a hull is impossible. Qhull precision errors indicate
+degenerate geometry for that run. The test explores candidate selection,
+not unmixing accuracy or the maximum number of recoverable fluorophores.
+See the [reference results](reference_results/hull_fluorophores/summary.md) for
+one run (Python 3.12.15, NumPy 2.5.4, SciPy 1.18.1, scikit-learn 1.9.1;
+single-threaded numerical libraries). The working tree contained the new
+evaluation script at the time of the run; the backend was at commit `a163893`.
+
+## Hull dimensions as signature count increases
+
+Run `python -m evaluations.evaluate_hull_signatures` from `Python/` to
+compare 3, 4, 6, 8 and 10 synthetic Gaussian signatures sampled by the same
+approximate `980_32ch` detector. Each noiseless data set contains 60 pixels,
+including one pure pixel per signature. For each data set, the evaluation
+tries `npc` equal to the signature count and one higher, recording matrix
+rank, hull outcome, vertex count and elapsed time. `--timeout` and
+`--output-dir` have the same meaning as in the preceding evaluation.
+
+The [reference results](reference_results/hull_signatures/summary.md)
+show one run with Python 3.12.15, NumPy 2.5.4, SciPy 1.18.1 and scikit-learn
+1.9.1; numerical libraries used one thread. The backend was at commit
+`a163893` and both evaluation scripts were uncommitted. These well-separated
+synthetic spectra and pure pixels are a favorable geometric case; successful
+hull construction does not establish that the same number of fluorophores can
+be recovered from a real image.
+
 For the simulation API, array layouts, count conventions and runnable offline
 examples, see the [simulation building-block guide](../lumic/simulation/README.md).
 This page describes the evaluation experiments built from those tools.
