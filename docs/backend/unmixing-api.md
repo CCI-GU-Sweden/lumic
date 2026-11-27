@@ -69,6 +69,8 @@ pixels included in the analysis. Its indices map back to the original
 spatial positions. To find starting spectra, pass the selected observations
 to `essential_spectral_pixels()`, then transpose the candidate matrix
 before passing it to `unique_profiles()`.
+For the geometry, limitations and examples with and without noise, see
+[Why use a convex hull?](convex-hull.md#why-use-a-convex-hull).
 
 ```python
 from lumic import essential_spectral_pixels, select_analysis_pixels, unique_profiles

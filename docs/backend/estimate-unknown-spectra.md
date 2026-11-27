@@ -9,6 +9,9 @@ resolution by alternating least squares (MCR-ALS).
 Run the blocks below in order using the environment from the
 [quickstart](quickstart.md).
 
+For an explanation of the selection method and its limitations, see
+[Convex hull selection](convex-hull.md).
+
 ## Simulate the input image
 
 Build a triangle with pure EBFP2 at the top, EGFP at the bottom left, and

@@ -1,0 +1,17 @@
+data,matrix_rank,npc,hull_dimensions,status,vertices,seconds,detail
+noiseless,3,3,2,completed,14,0.015650985998945544,
+noiseless,3,4,3,qhull_error,,,QH6154 Qhull precision error: Initial simplex is flat (facet 1 is coplanar with the interior point)
+noiseless,3,6,5,qhull_error,,,QH6154 Qhull precision error: Initial simplex is flat (facet 1 is coplanar with the interior point)
+noiseless,3,8,7,qhull_error,,,QH6154 Qhull precision error: Initial simplex is flat (facet 1 is coplanar with the interior point)
+noiseless,3,12,11,qhull_error,,,QH6154 Qhull precision error: Initial simplex is flat (facet 1 is coplanar with the interior point)
+noiseless,3,16,15,qhull_error,,,QH6154 Qhull precision error: Initial simplex is flat (facet 1 is coplanar with the interior point)
+noiseless,3,24,23,qhull_error,,,QH6154 Qhull precision error: Initial simplex is flat (facet 1 is coplanar with the interior point)
+noiseless,3,32,31,qhull_error,,,QH6154 Qhull precision error: Initial simplex is flat (facet 1 is coplanar with the interior point)
+noisy,32,3,2,completed,13,0.016796246000012616,
+noisy,32,4,3,completed,33,0.01889633900282206,
+noisy,32,6,5,completed,87,0.02309145700201043,
+noisy,32,8,7,completed,125,0.1896749949992227,
+noisy,32,12,11,timeout,,,Exceeded 8 seconds including startup
+noisy,32,16,15,timeout,,,Exceeded 8 seconds including startup
+noisy,32,24,23,timeout,,,Exceeded 8 seconds including startup
+noisy,32,32,31,timeout,,,Exceeded 8 seconds including startup
