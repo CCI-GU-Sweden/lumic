@@ -54,6 +54,7 @@ nav:
           - Simulate a spectral image: backend/simulate-image.md
           - Unmix a ternary image: backend/unmix-ternary-image.md
           - Estimate unknown spectra: backend/estimate-unknown-spectra.md
+          - Convex hull selection: backend/convex-hull.md
           - Spectral uniqueness maps: backend/spectral-uniqueness-maps.md
           - Recover a spectrum without pure pixels: backend/recover-hidden-spectrum.md
           - Evaluate simulation recovery: backend/evaluate-simulation-recovery.md
