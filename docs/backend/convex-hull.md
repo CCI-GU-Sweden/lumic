@@ -37,6 +37,13 @@ projected points lie in a lower-dimensional shape, the hull calculation can
 fail with a numerical precision error. Increasing the dimension can also
 make the calculation much slower or require much more memory.
 
+A common starting choice is to set `npc` to the number of component spectra
+you expect, then ask `unique_profiles` for that many starting spectra. These
+are separate choices: `npc` controls the projection used to find candidates,
+while `nr` controls how many candidates `unique_profiles` selects. Matching
+them is a convention for an initial attempt, not evidence that the expected
+component count is correct or that the hull calculation will succeed.
+
 In an idealized [synthetic signature evaluation](https://github.com/CCI-GU-Sweden/lumic/blob/main/Python/evaluations/reference_results/hull_signatures/summary.md),
 we sampled 3, 4, 6, 8 and 10 distinct Gaussian spectra through an approximate
 32-channel LSM 980 detector. The noiseless data included a pure pixel for
